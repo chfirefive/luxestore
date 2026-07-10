@@ -1,0 +1,53 @@
+/* src/components/SkeletonCard.module.css */
+
+/*
+  Premium skeleton placeholder for product cards.
+  Uses CSS variables for theming, subtle shimmer animation,
+  and respects dark mode via var(--background) etc.
+*/
+
+.skeletonCard {
+  width: 100%;
+  aspect-ratio: 1 / 1.2; /* matches product card proportion */
+  background: var(--surface);
+  border-radius: var(--radius, 0.75rem);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Shimmer effect */
+.skeletonCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Optional inner elements for text placeholders */
+.titlePlaceholder {
+  width: 70%;
+  height: 1rem;
+  margin: 0.5rem auto;
+  background: var(--border);
+  border-radius: 0.25rem;
+}
+
+.pricePlaceholder {
+  width: 40%;
+  height: 0.9rem;
+  margin: 0.3rem auto;
+  background: var(--border);
+  border-radius: 0.25rem;
+}
