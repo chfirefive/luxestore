@@ -49,7 +49,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         name,
         price: parseFloat(price),
         categorySlug: category,
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrl: imageUrl.trim() || "",
         description: description.trim() || 'No description provided.',
         archived,
       });

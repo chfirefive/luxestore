@@ -48,7 +48,7 @@ export default function CartPage() {
         email: form.email,
         phone: form.phone,
         address: form.address,
-        notes: form.notes || undefined,
+        notes: form.notes || "",
         items: cart,
         total,
       });

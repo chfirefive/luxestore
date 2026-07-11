@@ -39,7 +39,7 @@ export default function ProductsPage() {
       name,
       price: parseFloat(price),
       categorySlug: category,
-      imageUrl: imageUrl.trim() || undefined,
+      imageUrl: imageUrl.trim() || "",
       description: description.trim() || 'No description provided.',
       archived: false,
     });
