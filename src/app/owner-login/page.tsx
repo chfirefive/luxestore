@@ -105,7 +105,11 @@ export default function OwnerLogin() {
           {/* Optional Gmail address */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label htmlFor="ownerEmail" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Icons.Mail /> Gmail Address
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              Gmail Address
             </label>
             <input
               id="ownerEmail"
@@ -130,7 +134,11 @@ export default function OwnerLogin() {
           {/* Optional App Password */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label htmlFor="ownerSmtpPass" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Icons.Key /> Gmail App Password (16-char)
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Gmail App Password (16-char)
             </label>
             <input
               id="ownerSmtpPass"
@@ -138,7 +146,7 @@ export default function OwnerLogin() {
               type="password"
               value={smtpPass}
               onChange={(e) => setSmtpPass(e.target.value)}
-              placeholder="xxxx xxxx xxxx xxxx"
+              placeholder="•••• •••• •••• ••••"
               style={{
                 padding: '12px 14px',
                 borderRadius: 'var(--radius)',
