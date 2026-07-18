@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
-import { getCart, removeFromCart, updateCartQty, clearCart, placeOrder, CartItem } from '@/lib/firebaseDb';
+import { getCart, removeFromCart, updateCartQty, clearCart, placeOrder, CartItem, getOrdersByIds, checkPendingOrders } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 
 type CheckoutForm = {
@@ -20,6 +20,7 @@ export default function CartPage() {
   const [step, setStep] = useState<'cart' | 'checkout' | 'placing'>('cart');
   const [form, setForm] = useState<CheckoutForm>({ name: '', email: '', phone: '', address: '', notes: '' });
   const [formError, setFormError] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const refreshCart = () => setCart(getCart());
 
@@ -33,15 +34,9 @@ export default function CartPage() {
   const shipping = subtotal > 0 ? 9.99 : 0;
   const total = subtotal + shipping;
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.email || !form.phone || !form.address) {
-      setFormError('Please fill in all fields.');
-      return;
-    }
+  const executeOrder = async () => {
     setFormError('');
     setStep('placing');
-
     try {
       await placeOrder({
         client: form.name,
@@ -58,6 +53,29 @@ export default function CartPage() {
       setFormError('Failed to place your order. Please check your internet connection.');
       setStep('checkout');
     }
+  };
+
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.phone || !form.address) {
+      setFormError('Please fill in all fields.');
+      return;
+    }
+
+    // Check if there is an active order with matching email or phone in Firestore
+    try {
+      setStep('placing'); // Show loader briefly
+      const hasPending = await checkPendingOrders(form.email, form.phone);
+      if (hasPending) {
+        setStep('checkout');
+        setShowConfirmModal(true); // Trigger double order warning modal
+        return;
+      }
+    } catch (err) {
+      console.error('Error verifying existing orders:', err);
+    }
+
+    await executeOrder();
   };
 
   if (cart.length === 0 && step === 'cart') {
@@ -77,7 +95,7 @@ export default function CartPage() {
   return (
     <>
       <Navbar />
-      <div className="container" style={{ padding: '4rem 24px', minHeight: '80vh' }}>
+      <div className="container animate-fade-in" style={{ padding: '4rem 24px', minHeight: '80vh' }}>
         <h1 className="title" style={{ fontSize: '2.5rem', marginBottom: '2.5rem' }}>
           {step === 'cart' ? 'Your Cart' : 'Checkout'}
         </h1>
@@ -89,7 +107,7 @@ export default function CartPage() {
             {step === 'cart' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {cart.map(item => (
-                  <div key={item.productId} className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.25rem 1.5rem' }}>
+                  <div key={item.productId} className="card animate-scale-in" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.25rem 1.5rem' }}>
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', flexShrink: 0 }} />
                     ) : (
@@ -114,7 +132,7 @@ export default function CartPage() {
                 ))}
               </div>
             ) : (
-              <div className="card" style={{ padding: '2rem' }}>
+              <div className="card animate-scale-in" style={{ padding: '2rem' }}>
                 <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 600 }}>Delivery Information</h2>
                 <form id="checkout-form" onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   {[
@@ -158,7 +176,7 @@ export default function CartPage() {
           </div>
 
           {/* Right: Order Summary */}
-          <div className="card" style={{ padding: '2rem', position: 'sticky', top: '100px' }}>
+          <div className="card animate-scale-in" style={{ padding: '2rem', position: 'sticky', top: '100px', animationDelay: '0.1s' }}>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '1.5rem' }}>Order Summary</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
               {cart.map(item => (
@@ -181,7 +199,7 @@ export default function CartPage() {
             </div>
 
             {step === 'cart' ? (
-              <button className="btn-primary" onClick={() => setStep('checkout')} style={{ width: '100%', marginTop: '1.5rem', padding: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <button className="btn-primary shine-effect" onClick={() => setStep('checkout')} style={{ width: '100%', marginTop: '1.5rem', padding: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 Proceed to Checkout <Icons.ArrowRight />
               </button>
             ) : (
@@ -189,10 +207,10 @@ export default function CartPage() {
                 type="submit"
                 form="checkout-form"
                 disabled={step === 'placing'}
-                className="btn-primary"
+                className="btn-primary shine-effect"
                 style={{ width: '100%', marginTop: '1.5rem', padding: '14px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: step === 'placing' ? 0.7 : 1 }}
               >
-                {step === 'placing' ? 'Placing Order...' : <><Icons.Check /> Place Order</>}
+                {step === 'placing' ? <><span className="spinner" style={{ marginRight: '6px' }}></span> Placing Order...</> : <><Icons.Check /> Place Order</>}
               </button>
             )}
 
@@ -205,6 +223,100 @@ export default function CartPage() {
 
         </div>
       </div>
+
+      {/* Premium Double Order Confirmation Modal */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          animation: 'fadeIn 0.3s ease forwards'
+        }}>
+          <div className="card animate-scale-in" style={{
+            maxWidth: '500px',
+            width: '100%',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            padding: '2.5rem 2rem',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              background: 'rgba(245, 158, 11, 0.15)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
+              fontSize: '2rem',
+              color: '#f59e0b',
+              border: '1px solid rgba(245, 158, 11, 0.3)'
+            }}>
+              ⚠️
+            </div>
+            
+            <div>
+              <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-main)' }}>
+                Active Order Found
+              </h3>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                You already have an active order currently being prepared. Placing this order will create a **second, separate delivery**.
+              </p>
+              <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                If you wish to add items to your existing order instead, please contact customer support.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  executeOrder();
+                }}
+                className="btn-primary shine-effect"
+                style={{ flex: 1, padding: '12px', fontSize: '0.95rem', minWidth: '140px' }}
+              >
+                Yes, Place Order
+              </button>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  fontSize: '0.95rem',
+                  background: 'none',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius)',
+                  color: 'var(--text-main)',
+                  cursor: 'pointer',
+                  minWidth: '140px',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

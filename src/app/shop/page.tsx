@@ -141,7 +141,7 @@ export default function Shop() {
     <>
       <Navbar />
 
-      <main className={styles.main}>
+      <main className={`${styles.main} animate-fade-in`}>
         {/* Banner / Hero Slider */}
         <section className={styles.hero}>
           <div className="container">
@@ -153,10 +153,10 @@ export default function Shop() {
                 {settings?.heroSubtitle || 'Discover curated luxury goods, high-end electronics, and premium fashion designed for the modern connoisseur.'}
               </p>
               <div className={styles.heroActions}>
-                <a href="#shop-now" className="btn-primary" style={{ padding: '15px 32px', fontSize: '1.05rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                <a href="#shop-now" className="btn-primary shine-effect" style={{ padding: '15px 32px', fontSize: '1.05rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
                   Shop Now
                 </a>
-                <a href="#flash-deals" className={styles.secondaryBtn} style={{ textDecoration: 'none' }}>
+                <a href="#flash-deals" className={`${styles.secondaryBtn} shine-effect`} style={{ textDecoration: 'none' }}>
                   Explore Flash Deals
                 </a>
               </div>
@@ -249,9 +249,8 @@ export default function Shop() {
             </div>
           </div>
         </section>
-
         {/* Dynamic E-Commerce Catalog Grid & Filters */}
-        
+        <section id="shop-now" className={styles.productShowcase}>
           <div className="container">
             <div className={styles.sectionHeader}>
               <h2 className="title" style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Just For You</h2>
@@ -263,8 +262,8 @@ export default function Shop() {
               <div className={styles.filterRowMain}>
                 <div style={{ position: 'relative' }}>
                   <input
-                    id="shop-search-mobile"
-                    name="shop-search-mobile"
+                    id="shop-search"
+                    name="shop-search"
                     type="text"
                     aria-label="Search items"
                     placeholder="Search items by name or description..."
@@ -280,8 +279,8 @@ export default function Shop() {
 
                 <div>
                   <select
-                    id="shop-category-mobile"
-                    name="shop-category-mobile"
+                    id="shop-category"
+                    name="shop-category"
                     aria-label="Filter by category"
                     value={category}
                     onChange={e => setCategory(e.target.value)}
@@ -296,8 +295,8 @@ export default function Shop() {
 
                 <div>
                   <select
-                    id="shop-sort-mobile"
-                    name="shop-sort-mobile"
+                    id="shop-sort"
+                    name="shop-sort"
                     aria-label="Sort products"
                     value={sort}
                     onChange={e => setSort(e.target.value)}
@@ -315,8 +314,8 @@ export default function Shop() {
                 <div className={styles.priceRangeInputs}>
                   <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Price Limit:</span>
                   <input
-                    id="shop-min-price-mobile"
-                    name="shop-min-price-mobile"
+                    id="shop-min-price"
+                    name="shop-min-price"
                     type="number"
                     aria-label="Minimum price"
                     placeholder="Min"
@@ -326,8 +325,8 @@ export default function Shop() {
                   />
                   <span style={{ color: 'var(--text-muted)' }}>—</span>
                   <input
-                    id="shop-max-price-mobile"
-                    name="shop-max-price-mobile"
+                    id="shop-max-price"
+                    name="shop-max-price"
                     type="number"
                     aria-label="Maximum price"
                     placeholder="Max"
@@ -336,140 +335,43 @@ export default function Shop() {
                     className={styles.priceInput}
                   />
                 </div>
-
                 {(search || category !== 'all' || minPrice || maxPrice || sort !== 'default') && (
-                  <button onClick={handleClearFilters} className={styles.clearFiltersBtn}>
-                    Clear Filters
-                  </button>
+                  <button onClick={handleClearFilters} className={styles.clearFiltersBtn}>Clear Filters</button>
                 )}
               </div>
             </div>
 
-            {/* Centered Products Showcase Grid */}
-          // Corrected product showcase section with proper JSX nesting
-<section id="shop-now" className={styles.productShowcase}>
-  <div className="container">
-    <div className={styles.sectionHeader}>
-      <h2 className="title" style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Just For You</h2>
-      <p className={styles.sectionSubtitle}>Browse, filter, and order premium items catalogued directly in our menus.</p>
-    </div>
-
-    {/* Filter Bar */}
-    <div className={styles.filterBar}>
-      <div className={styles.filterRowMain}>
-        <div style={{ position: 'relative' }}>
-          <input
-            id="shop-search"
-            name="shop-search"
-            type="text"
-            aria-label="Search items"
-            placeholder="Search items by name or description..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className={styles.filterInput}
-            style={{ paddingLeft: '40px' }}
-          />
-          <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-            <Icons.Search />
+            {/* Products Grid */}
+            {sortedProducts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '1rem' }}>No products match your active search filter settings.</p>
+                <button onClick={handleClearFilters} className="btn-primary" style={{ padding: '10px 20px' }}>Show All Products</button>
+              </div>
+            ) : loading ? (
+              <div className="grid-3">
+                {[...Array(displayedCount)].map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid-3">
+                {sortedProducts.slice(0, displayedCount).map(item => (
+                  <ProductCard
+                    key={`catalog-${item.id}`}
+                    id={item.id}
+                    name={item.name}
+                    price={item.price}
+                    image={item.imageUrl}
+                    description={item.description}
+                    comments={Math.floor(Math.random() * 40)}
+                    product={item}
+                  />
+                ))}
+                <div ref={sentinelRef} />
+              </div>
+            )}
           </div>
-        </div>
-
-        <div>
-          <select
-            id="shop-category"
-            name="shop-category"
-            aria-label="Filter by category"
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="all">All Category Menus</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.slug}>{cat.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <select
-            id="shop-sort"
-            name="shop-sort"
-            aria-label="Sort products"
-            value={sort}
-            onChange={e => setSort(e.target.value)}
-            className={styles.filterSelect}
-          >
-            <option value="default">Default Sorting</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="name-asc">Alphabetical: A-Z</option>
-          </select>
-        </div>
-      </div>
-
-      <div className={styles.filterRowSecond}>
-        <div className={styles.priceRangeInputs}>
-          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Price Limit:</span>
-          <input
-            id="shop-min-price"
-            name="shop-min-price"
-            type="number"
-            aria-label="Minimum price"
-            placeholder="Min"
-            value={minPrice}
-            onChange={e => setMinPrice(e.target.value)}
-            className={styles.priceInput}
-          />
-          <span style={{ color: 'var(--text-muted)' }}>—</span>
-          <input
-            id="shop-max-price"
-            name="shop-max-price"
-            type="number"
-            aria-label="Maximum price"
-            placeholder="Max"
-            value={maxPrice}
-            onChange={e => setMaxPrice(e.target.value)}
-            className={styles.priceInput}
-          />
-        </div>
-        {(search || category !== 'all' || minPrice || maxPrice || sort !== 'default') && (
-          <button onClick={handleClearFilters} className={styles.clearFiltersBtn}>Clear Filters</button>
-        )}
-      </div>
-    </div>
-
-    {/* Products Grid */}
-    {sortedProducts.length === 0 ? (
-      <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '1rem' }}>No products match your active search filter settings.</p>
-        <button onClick={handleClearFilters} className="btn-primary" style={{ padding: '10px 20px' }}>Show All Products</button>
-      </div>
-    ) : loading ? (
-      <div className="grid-3">
-        {[...Array(displayedCount)].map((_, i) => (
-          <SkeletonCard key={i} />
-        ))}
-      </div>
-    ) : (
-      <div className="grid-3">
-        {sortedProducts.slice(0, displayedCount).map(item => (
-          <ProductCard
-            key={`catalog-${item.id}`}
-            id={item.id}
-            name={item.name}
-            price={item.price}
-            image={item.imageUrl}
-            description={item.description}
-            comments={Math.floor(Math.random() * 40)}
-            product={item}
-          />
-        ))}
-        <div ref={sentinelRef} />
-      </div>
-    )}
-  </div>
-</section>
-          </div>
+        </section>
 
         {/* Guarantees Trust Banner */}
         {badges.filter(b => b.active).length > 0 && (

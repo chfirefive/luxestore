@@ -8,46 +8,30 @@ export default function OrderSuccessPage() {
   return (
     <>
       <Navbar />
-      <div className="container" style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem', textAlign: 'center', padding: '4rem 24px' }}>
+      <div className="container animate-fade-in" style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem', textAlign: 'center', padding: '4rem 24px' }}>
 
-        <div style={{
-          width: '100px',
-          height: '100px',
-          background: 'linear-gradient(135deg, #10b981, #059669)',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: 'scaleIn 0.5s ease',
-          boxShadow: '0 0 40px rgba(16,185,129,0.4)'
-        }}>
-          <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
+        <div className="animate-scale-in" style={{ display: 'flex', justifyContent: 'center' }}>
+          <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle className="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+            <path className="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
           </svg>
         </div>
 
-        <div>
+        <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
           <h1 style={{ fontSize: '2.8rem', fontWeight: 800, marginBottom: '1rem' }}>Order Placed! 🎉</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.15rem', maxWidth: '500px', lineHeight: 1.7 }}>
             Thank you for your purchase! The store owner has been notified and will prepare your order shortly.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Link href="/shop" className="btn-primary" style={{ padding: '14px 32px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="animate-slide-up" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', animationDelay: '0.6s' }}>
+          <Link href="/shop" className="btn-primary shine-effect" style={{ padding: '14px 32px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Icons.Store /> Continue Shopping
           </Link>
-          <Link href="/shop" style={{ padding: '14px 32px', fontSize: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', textDecoration: 'none', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link href="/shop" className="shine-effect" style={{ padding: '14px 32px', fontSize: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', textDecoration: 'none', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)' }}>
             <Icons.Orders /> Back to Home
           </Link>
         </div>
-
-        <style>{`
-          @keyframes scaleIn {
-            from { transform: scale(0); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-          }
-        `}</style>
       </div>
     </>
   );

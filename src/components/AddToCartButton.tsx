@@ -1,42 +1,61 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { addToCart, Product } from '@/lib/firebaseDb';
 import { Icons } from './Icons';
 
 export default function AddToCartButton({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
+  const router = useRouter();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleAdd = () => {
-    // Use sendBeacon if available for fire-and-forget request
-    if (navigator.sendBeacon) {
-      const url = '/api/add-to-cart'; // placeholder endpoint
-      const payload = JSON.stringify(product);
-      const blob = new Blob([payload], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
-    } else {
-      addToCart(product);
-    }
+  const isOutOfStock = product.stock !== undefined && product.stock <= 0;
+
+  const handleAdd = useCallback(() => {
+    if (isOutOfStock || debounceRef.current) return;
+
+    addToCart(product);
     setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
-  };
 
-  // Debounce clicks to prevent rapid duplicate adds
-  const debouncedHandleAdd = (() => {
-    let timeout: NodeJS.Timeout | null = null;
-    return () => {
-      if (timeout) return;
-      handleAdd();
-      timeout = setTimeout(() => {
-        timeout = null;
-      }, 300);
-    };
-  })();
+    // Navigate to cart page after a brief visual confirmation
+    setTimeout(() => {
+      setAdded(false);
+      router.push('/cart');
+    }, 800);
+
+    // Debounce: block rapid duplicate clicks for 1s
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+    }, 1000);
+  }, [isOutOfStock, product, router]);
+
+  if (isOutOfStock) {
+    return (
+      <button
+        disabled
+        className="btn-secondary"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          padding: '10px',
+          fontSize: '0.95rem',
+          cursor: 'not-allowed',
+          opacity: 0.6,
+        }}
+      >
+        <Icons.Shield /> Sold Out
+      </button>
+    );
+  }
 
   return (
     <button
-      onClick={debouncedHandleAdd}
-      className="btn-primary"
+      onClick={handleAdd}
+      className="btn-primary shine-effect"
       style={{
         width: '100%',
         display: 'flex',

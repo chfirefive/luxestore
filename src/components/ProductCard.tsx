@@ -51,7 +51,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
         </div>
       </Link>
       <div style={{ padding: '0 1.5rem 1.5rem' }}>
-        <AddToCartButton product={product ?? { id: String(id), name, price, categorySlug: '', description: description || '', imageUrl: image }} />
+        <AddToCartButton product={product ?? { id: String(id), name, price, categorySlug: '', description: description || '', imageUrl: image, stock: 1 }} />
       </div>
     </div>
   );

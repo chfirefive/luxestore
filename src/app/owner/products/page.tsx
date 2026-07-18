@@ -18,6 +18,7 @@ export default function ProductsPage() {
   const [category, setCategory] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
+  const [stock, setStock] = useState('10');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -41,11 +42,12 @@ export default function ProductsPage() {
       categorySlug: category,
       imageUrl: imageUrl.trim() || "",
       description: description.trim() || 'No description provided.',
+      stock: parseInt(stock) || 0,
       archived: false,
     });
 
     setProducts(prev => [newProd, ...prev]);
-    setName(''); setPrice(''); setImageUrl(''); setDescription('');
+    setName(''); setPrice(''); setImageUrl(''); setDescription(''); setStock('10');
     setSuccess(`Successfully added "${name}"!`);
     setTimeout(() => setSuccess(''), 3000);
     setSaving(false);
@@ -77,7 +79,7 @@ export default function ProductsPage() {
         <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-main)' }}>Add New Product</h2>
 
         <form onSubmit={handleAddProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label htmlFor="product-name" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Product Name</label>
               <input id="product-name" name="product-name" type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Leather Bag" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
@@ -95,6 +97,11 @@ export default function ProductsPage() {
                   <option key={cat.id} value={cat.slug}>{cat.name}</option>
                 ))}
               </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="product-stock" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Stock Qty</label>
+              <input id="product-stock" name="product-stock" type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} required placeholder="e.g. 10" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
             </div>
           </div>
 
@@ -132,6 +139,30 @@ export default function ProductsPage() {
         )}
       </div>
 
+      {products.filter(p => p.stock <= 0).length > 0 && (
+        <div style={{
+          background: 'rgba(239,68,68,0.1)',
+          border: '1px solid #ef4444',
+          color: '#ef4444',
+          padding: '1.25rem',
+          borderRadius: '12px',
+          marginBottom: '2rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          fontWeight: 600,
+          boxShadow: '0 4px 12px rgba(239,68,68,0.05)'
+        }}>
+          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+          <div>
+            <div style={{ fontSize: '1.05rem' }}>Attention: You have {products.filter(p => p.stock <= 0).length} product(s) out of stock!</div>
+            <div style={{ fontSize: '0.85rem', color: 'rgba(239,68,68,0.85)', fontWeight: 400, marginTop: '2px' }}>
+              Buyers will see these products as "Sold Out" and won't be able to purchase them. Edit a product to add stock or delete it.
+            </div>
+          </div>
+        </div>
+      )}
+
       <h2 style={{ marginBottom: '1rem' }}>All Products ({products.length})</h2>
       <div className={styles.tableContainer}>
         <table className={styles.table}>
@@ -141,13 +172,14 @@ export default function ProductsPage() {
               <th className={styles.th}>Name</th>
               <th className={styles.th}>Price</th>
               <th className={styles.th}>Category Menu</th>
+              <th className={styles.th}>Stock</th>
               <th className={styles.th}>Status</th>
               <th className={styles.th}>Action</th>
             </tr>
           </thead>
           <tbody>
             {products.length === 0 ? (
-              <tr><td colSpan={6} className={styles.td} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No products yet. Add your first product above.</td></tr>
+              <tr><td colSpan={7} className={styles.td} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No products yet. Add your first product above.</td></tr>
             ) : (
               products.map(p => (
                 <tr key={p.id} className={styles.row}>
@@ -161,6 +193,17 @@ export default function ProductsPage() {
                   <td className={styles.td}><strong>{p.name}</strong></td>
                   <td className={styles.td}>${p.price.toFixed(2)}</td>
                   <td className={styles.td}><span className={styles.statusReady}>{categories.find(c => c.slug === p.categorySlug)?.name || p.categorySlug}</span></td>
+                  <td className={styles.td}>
+                    {p.stock <= 0 ? (
+                      <span style={{ color: '#ef4444', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(239,68,68,0.1)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        Out of Stock
+                      </span>
+                    ) : (
+                      <span style={{ color: p.stock < 5 ? '#f59e0b' : 'var(--text-muted)', fontWeight: p.stock < 5 ? 700 : 500 }}>
+                        {p.stock} units
+                      </span>
+                    )}
+                  </td>
                   <td className={styles.td}>
                     <span className={p.archived ? styles.statusPending : styles.statusReady}>
                       {p.archived ? 'Archived' : 'Live'}

@@ -11,13 +11,19 @@ import styles from './Navbar.module.css';
 export default function Navbar() {
   const [buyerAuth, setBuyerAuth] = useState('');
   const [cartCount, setCartCount] = useState(0);
+  const [shouldWobble, setShouldWobble] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const updateCart = () => {
     const cart = getCart();
-    setCartCount(cart.reduce((sum, c) => sum + c.qty, 0));
+    const count = cart.reduce((sum, c) => sum + c.qty, 0);
+    setCartCount(count);
+    setShouldWobble(true);
+    setTimeout(() => setShouldWobble(false), 600);
   };
 
   useEffect(() => {
+    setMounted(true);
     const authEmail = sessionStorage.getItem('buyer_auth');
     if (authEmail) setBuyerAuth(authEmail);
     updateCart();
@@ -47,6 +53,9 @@ export default function Navbar() {
           <Link href="/shop" style={{ textDecoration: 'none', color: 'var(--text-main)', padding: '12px 0', fontWeight: 600 }}>Home</Link>
           <Link href="/shop/about" style={{ textDecoration: 'none', color: 'var(--text-muted)', padding: '12px 0', fontWeight: 500 }}>About</Link>
           <Link href="/shop/contact" style={{ textDecoration: 'none', color: 'var(--text-muted)', padding: '12px 0', fontWeight: 500 }}>Contact</Link>
+          {mounted && (
+            <Link href="/shop/orders" style={{ textDecoration: 'none', color: 'var(--text-muted)', padding: '12px 0', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>Orders</Link>
+          )}
         </div>
 
         <div className={styles.authButtons}>
@@ -64,11 +73,11 @@ export default function Navbar() {
               <Icons.User /> Sign In
             </Link>
           )}
-          <Link href="/cart" className={`btn-primary ${styles.signupBtn}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+          <Link href="/cart" className={`btn-primary ${styles.signupBtn || ''} shine-effect`} style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
             <Icons.Cart />
             Cart
             {cartCount > 0 && (
-              <span style={{
+              <span className={shouldWobble ? 'animate-wobble' : ''} style={{
                 background: '#ef4444',
                 color: 'white',
                 borderRadius: '50%',

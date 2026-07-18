@@ -15,6 +15,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [category, setCategory] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
+  const [stock, setStock] = useState('0');
   const [archived, setArchived] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -29,6 +30,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setCategory(prod.categorySlug);
         setImageUrl(prod.imageUrl || '');
         setDescription(prod.description);
+        setStock(prod.stock !== undefined ? prod.stock.toString() : '0');
         setArchived(!!prod.archived);
       } else {
         setError('Product not found in Firestore');
@@ -51,6 +53,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         categorySlug: category,
         imageUrl: imageUrl.trim() || "",
         description: description.trim() || 'No description provided.',
+        stock: parseInt(stock) || 0,
         archived,
       });
       router.push('/owner/products');
@@ -87,7 +90,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
       <div className="card" style={{ padding: '2.5rem' }}>
         <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1.25rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label htmlFor="product-name" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Product Name</label>
               <input id="product-name" name="product-name" type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Leather Bag"
@@ -104,6 +107,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem' }}>
                 {categories.map(cat => <option key={cat.id} value={cat.slug}>{cat.name}</option>)}
               </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="product-stock" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Stock Qty</label>
+              <input id="product-stock" name="product-stock" type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} required placeholder="e.g. 10"
+                style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem' }} />
             </div>
           </div>
 

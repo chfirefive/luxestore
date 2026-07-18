@@ -17,7 +17,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from './firebaseClient';
+import { db } from './firebase';
 
 // ─── TYPE DEFINITIONS ────────────────────────────────────────────────────────
 
@@ -36,6 +36,7 @@ export type Product = {
   imageUrl?: string;
   description: string;
   archived?: boolean;
+  stock: number;
 };
 
 export type StoreSettings = {
@@ -78,7 +79,7 @@ export type Order = {
   items: CartItem[];
   total: number;
   date: string;
-  status: 'Pending' | 'Ready';
+  status: 'Pending' | 'Ready' | 'Cancelled';
   readyDate?: string;
 };
 
@@ -146,20 +147,27 @@ export async function deleteCategory(id: string) {
 
 export async function getProducts(): Promise<Product[]> {
   const snap = await getDocs(collection(db, 'products'));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+  return snap.docs.map(d => {
+    const data = d.data();
+    return { id: d.id, ...data, stock: data.stock ?? 0 } as Product;
+  });
 }
 
 export async function getProductsLimited(batchSize: number): Promise<Product[]> {
   const q = query(collection(db, 'products'), orderBy('name'), fbLimit(batchSize));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+  return snap.docs.map(d => {
+    const data = d.data();
+    return { id: d.id, ...data, stock: data.stock ?? 0 } as Product;
+  });
 }
 
 
 export async function getProductById(id: string): Promise<Product | null> {
   const snap = await getDoc(doc(db, 'products', id));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Product;
+  const data = snap.data();
+  return { id: snap.id, ...data, stock: data.stock ?? 0 } as Product;
 }
 
 export async function addProduct(product: Omit<Product, 'id'>): Promise<Product> {
@@ -272,6 +280,40 @@ export async function getOrders(): Promise<Order[]> {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
 }
 
+export async function getOrdersByIds(ids: string[]): Promise<Order[]> {
+  if (!ids || ids.length === 0) return [];
+  const orders: Order[] = [];
+  for (const id of ids) {
+    try {
+      const snap = await getDoc(doc(db, 'orders', id));
+      if (snap.exists()) {
+        orders.push({ id: snap.id, ...snap.data() } as Order);
+      }
+    } catch (e) {
+      console.error('Failed to fetch order details for id ' + id, e);
+    }
+  }
+  return orders.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export async function checkPendingOrders(email: string, phone: string): Promise<boolean> {
+  try {
+    const snap = await getDocs(query(collection(db, 'orders'), where('status', '==', 'Pending')));
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedPhone = phone.trim();
+
+    return snap.docs.some(doc => {
+      const data = doc.data();
+      const dbEmail = (data.email || '').trim().toLowerCase();
+      const dbPhone = (data.phone || '').trim();
+      return dbEmail === sanitizedEmail || dbPhone === sanitizedPhone;
+    });
+  } catch (e) {
+    console.error('Failed to check pending orders:', e);
+    return false;
+  }
+}
+
 export async function placeOrder(order: Omit<Order, 'id' | 'date' | 'status'>): Promise<Order> {
   const newOrder: Omit<Order, 'id'> = {
     ...order,
@@ -280,6 +322,35 @@ export async function placeOrder(order: Omit<Order, 'id' | 'date' | 'status'>): 
   };
   const ref = await addDoc(collection(db, 'orders'), newOrder);
   const result: Order = { id: ref.id, ...newOrder };
+
+  // Save order ID in localStorage for tracking
+  if (typeof window !== 'undefined') {
+    try {
+      const existing = localStorage.getItem('luxe_order_ids');
+      const ids = existing ? JSON.parse(existing) : [];
+      if (!ids.includes(ref.id)) {
+        ids.push(ref.id);
+        localStorage.setItem('luxe_order_ids', JSON.stringify(ids));
+      }
+    } catch (e) {
+      console.error('Failed to save order ID to localStorage', e);
+    }
+  }
+
+  // Decrement product stock in Firestore
+  for (const item of order.items) {
+    try {
+      const prodRef = doc(db, 'products', item.productId);
+      const prodSnap = await getDoc(prodRef);
+      if (prodSnap.exists()) {
+        const currentStock = prodSnap.data().stock ?? 0;
+        const newStock = Math.max(0, currentStock - item.qty);
+        await updateDoc(prodRef, { stock: newStock });
+      }
+    } catch (err) {
+      console.error('Failed to decrement stock for product ' + item.productId, err);
+    }
+  }
 
   // Also log the client
   await addClient({
@@ -294,10 +365,95 @@ export async function placeOrder(order: Omit<Order, 'id' | 'date' | 'status'>): 
   return result;
 }
 
+export async function sendStatusEmail(email: string, clientName: string, orderId: string, status: 'Ready' | 'Cancelled', total: number, date: string) {
+  try {
+    const shortId = orderId.substring(orderId.length - 6).toUpperCase();
+    const titleColor = status === 'Ready' ? '#10b981' : '#ef4444';
+    const statusText = status === 'Ready' ? 'Confirmed & Ready! 🎉' : 'Cancelled ❌';
+    const statusMessage = status === 'Ready'
+      ? 'Good news! Your order has been confirmed by the store owner and is prepared for pickup or delivery.'
+      : 'We regret to inform you that your order has been cancelled by the store owner. If you have any questions, please contact support.';
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 40px 20px; max-width: 600px; margin: 0 auto; border: 1px solid #334155; border-radius: 12px;">
+        <div style="text-align: center; border-bottom: 1px solid #334155; padding-bottom: 20px; margin-bottom: 20px;">
+          <h1 style="color: #6366f1; margin: 0; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">LuxeStore</h1>
+        </div>
+        
+        <h2 style="font-size: 20px; color: ${titleColor}; text-align: center; font-weight: 600; margin-bottom: 20px;">
+          Order #${shortId} Status Update: ${statusText}
+        </h2>
+        
+        <p style="font-size: 16px; color: #f8fafc; line-height: 1.6;">
+          Hello <strong>${clientName}</strong>,
+        </p>
+        
+        <p style="font-size: 15px; color: #94a3b8; line-height: 1.6;">
+          ${statusMessage}
+        </p>
+
+        <div style="background-color: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin: 25px 0;">
+          <h3 style="margin-top: 0; color: #f8fafc; font-size: 16px; border-bottom: 1px solid #334155; padding-bottom: 10px;">Order Details</h3>
+          <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 6px 0; color: #94a3b8;">Order Reference:</td>
+              <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #f8fafc;">#${orderId}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #94a3b8;">Date Placed:</td>
+              <td style="padding: 6px 0; font-weight: 600; text-align: right; color: #f8fafc;">${date}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #94a3b8; font-size: 15px; font-weight: bold;">Total Amount:</td>
+              <td style="padding: 6px 0; font-weight: bold; text-align: right; color: #6366f1; font-size: 16px;">$${total.toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-top: 30px; border-top: 1px solid #334155; padding-top: 20px;">
+          Thank you for choosing LuxeStore.<br/>
+          This is an automated status update email notification.
+        </p>
+      </div>
+    `;
+
+    // Try client-side send call
+    if (typeof window !== 'undefined') {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          subject: `LuxeStore Order #${shortId} Status Update: ${status}`,
+          html: htmlContent
+        })
+      });
+    }
+  } catch (e) {
+    console.error('Failed to trigger status notification email:', e);
+  }
+}
+
+export async function getOrder(id: string): Promise<Order | null> {
+  try {
+    const snap = await getDoc(doc(db, 'orders', id));
+    return snap.exists() ? ({ id: snap.id, ...snap.data() } as Order) : null;
+  } catch (err) {
+    console.error('Failed to get order:', err);
+    return null;
+  }
+}
+
 export async function markOrderReady(id: string) {
   await updateDoc(doc(db, 'orders', id), {
     status: 'Ready',
     readyDate: new Date().toISOString().split('T')[0],
+  });
+}
+
+export async function cancelOrder(id: string) {
+  await updateDoc(doc(db, 'orders', id), {
+    status: 'Cancelled',
   });
 }
 

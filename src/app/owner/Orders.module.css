@@ -36,44 +36,81 @@
   padding: 1rem;
   border-bottom: 1px solid var(--border);
   color: var(--text-main);
+  vertical-align: middle;
 }
 
 .row:last-child .td {
   border-bottom: none;
 }
 
+/* ─── Status Badges ─── */
+
 .statusPending {
   color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .statusReady {
   color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem;
   font-weight: 600;
+  white-space: nowrap;
 }
+
+.statusCancelled {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ─── Action Buttons ─── */
 
 .actionBtn {
   background: transparent;
   border: 1px solid var(--primary);
   color: var(--primary);
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 
-.actionBtn:hover {
+.actionBtn:hover:not(:disabled) {
   background: var(--primary);
   color: white;
+  transform: scale(1.03);
+}
+
+.actionCancelBtn {
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.actionCancelBtn:hover:not(:disabled) {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.03);
 }
 
 .actionBtnDisabled {
@@ -81,7 +118,55 @@
   border: 1px solid var(--border);
   color: var(--text-muted);
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: not-allowed;
   font-weight: 500;
+  font-size: 0.85rem;
+  opacity: 0.55;
 }
+
+.confirmBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  gap: 6px;
+  max-width: 180px;
+}
+
+.confirmYes {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.confirmYes:hover {
+  background: #dc2626;
+  transform: scale(1.03);
+}
+
+.confirmNo {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.confirmNo:hover {
+  background: var(--surface-hover);
+}
+
