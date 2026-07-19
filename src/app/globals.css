@@ -247,3 +247,17 @@ body {
   50% { transform: scale3d(1.1, 1.1, 1); }
 }
 
+.cart-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .cart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+

@@ -82,11 +82,29 @@ export default function CartPage() {
     return (
       <>
         <Navbar />
-        <div className="container" style={{ padding: '6rem 24px', minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
-          <div style={{ fontSize: '5rem' }}>🛒</div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Your cart is empty</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Add items from the store and they will appear here.</p>
-          <a href="/shop" className="btn-primary" style={{ padding: '14px 32px' }}>Continue Shopping</a>
+        <div className="container" style={{ padding: '6rem 24px', minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', textAlign: 'center' }}>
+          {/* Animated empty cart SVG */}
+          <div style={{ position: 'relative', width: '120px', height: '120px' }}>
+            <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(236,72,153,0.08))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 2.5s ease-in-out infinite' }}>
+              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="url(#cartGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <defs>
+                  <linearGradient id="cartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#6366f1"/>
+                    <stop offset="100%" stopColor="#ec4899"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              </svg>
+            </div>
+          </div>
+          <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)' }}>Your cart is empty</h1>
+          <p style={{ color: 'var(--text-muted)', maxWidth: '400px', lineHeight: 1.6 }}>Looks like you haven&apos;t added anything yet. Explore our premium collection and find something you love.</p>
+          <a href="/shop" className="btn-primary shine-effect" style={{ padding: '14px 32px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Browse the Store
+          </a>
+          <style>{`@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }`}</style>
         </div>
       </>
     );
@@ -95,12 +113,22 @@ export default function CartPage() {
   return (
     <>
       <Navbar />
+
+      {/* Full-screen placing overlay */}
+      {step === 'placing' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
+          <div style={{ width: '72px', height: '72px', borderRadius: '50%', border: '4px solid rgba(99,102,241,0.2)', borderTopColor: 'var(--primary)', animation: 'spin 0.8s linear infinite' }} />
+          <p style={{ color: 'white', fontWeight: 600, fontSize: '1.1rem' }}>Placing your order...</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>Please don&apos;t close this window</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
       <div className="container animate-fade-in" style={{ padding: '4rem 24px', minHeight: '80vh' }}>
         <h1 className="title" style={{ fontSize: '2.5rem', marginBottom: '2.5rem' }}>
           {step === 'cart' ? 'Your Cart' : 'Checkout'}
         </h1>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem', alignItems: 'start' }}>
+        <div className="cart-grid">
           
           {/* Left: Cart Items or Checkout Form */}
           <div>
