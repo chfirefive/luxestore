@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Icons } from '@/components/Icons';
-import { getCategories, addCategory, updateCategory, deleteCategory, Category } from '@/lib/firebaseDb';
+import { listenToCategories, addCategory, updateCategory, deleteCategory, Category } from '@/lib/firebaseDb';
 import styles from '../Orders.module.css';
 
 export default function MenusPage() {
@@ -12,7 +12,11 @@ export default function MenusPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getCategories().then(data => { setMenus(data); setLoading(false); });
+    const unsub = listenToCategories(data => {
+      setMenus(data);
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   const addMenu = async (e: React.FormEvent) => {
@@ -21,7 +25,6 @@ export default function MenusPage() {
 
     const slug = newMenuName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const newMenu = await addCategory({ name: newMenuName, slug, active: true });
-    setMenus(prev => [...prev, newMenu]);
     setNewMenuName('');
     setSuccess(`Menu "${newMenu.name}" added!`);
     setTimeout(() => setSuccess(''), 3000);
@@ -29,12 +32,10 @@ export default function MenusPage() {
 
   const toggleMenu = async (menu: Category) => {
     await updateCategory(menu.id, { active: !menu.active });
-    setMenus(prev => prev.map(m => m.id === menu.id ? { ...m, active: !m.active } : m));
   };
 
   const deleteMenu = async (id: string) => {
     await deleteCategory(id);
-    setMenus(prev => prev.filter(m => m.id !== id));
   };
 
   if (loading) {

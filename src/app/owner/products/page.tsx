@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Icons } from '@/components/Icons';
 import {
-  getCategories, Category,
-  getProducts, addProduct, updateProduct, deleteProduct, Product
+  listenToCategories, Category,
+  listenToProducts, addProduct, updateProduct, deleteProduct, Product
 } from '@/lib/firebaseDb';
 import styles from '../Orders.module.css';
 
@@ -23,12 +23,30 @@ export default function ProductsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([getCategories(), getProducts()]).then(([cats, prods]) => {
+    let catsLoaded = false;
+    let prodsLoaded = false;
+
+    const checkLoading = () => {
+      if (catsLoaded && prodsLoaded) setLoading(false);
+    };
+
+    const unsubCats = listenToCategories((cats) => {
       setCategories(cats);
-      if (cats.length > 0) setCategory(cats[0].slug);
-      setProducts(prods);
-      setLoading(false);
+      if (cats.length > 0 && !catsLoaded) setCategory(cats[0].slug);
+      catsLoaded = true;
+      checkLoading();
     });
+
+    const unsubProds = listenToProducts((prods) => {
+      setProducts(prods);
+      prodsLoaded = true;
+      checkLoading();
+    });
+
+    return () => {
+      unsubCats();
+      unsubProds();
+    };
   }, []);
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -75,7 +93,7 @@ export default function ProductsPage() {
         </h1>
       </div>
 
-      <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
+      <div className="card glass-panel" style={{ padding: '2rem', marginBottom: '2rem', background: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}>
         <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-main)' }}>Add New Product</h2>
 
         <form onSubmit={handleAddProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -189,11 +207,14 @@ export default function ProductsPage() {
             ) : (
               products.map(p => (
                 <tr key={p.id} className={styles.row}>
-                  <td className={styles.td}>
+                  <td className={styles.td} style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '250px' }}>
                     {p.imageUrl ? (
-                      <img src={p.imageUrl} alt={p.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
+                      <>
+                        <img src={p.imageUrl} alt={p.name} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{p.description.length > 60 ? p.description.substring(0, 60) + '...' : p.description}</span>
+                      </>
                     ) : (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.description.substring(0, 30)}...</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.description.substring(0, 60)}...</span>
                     )}
                   </td>
                   <td className={styles.td}><strong>{p.name}</strong></td>

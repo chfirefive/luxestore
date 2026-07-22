@@ -72,7 +72,10 @@ export default function RootLayout({
 
         <meta name="theme-color" content="#0f172a" />
       </head>
-      <body>{children}</body>
+      <body>
+        <div className="global-bg-overlay" />
+        {children}
+      </body>
     </html>
   );
 }

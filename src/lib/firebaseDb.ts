@@ -16,6 +16,7 @@ import {
   limit as fbLimit,
   serverTimestamp,
   Timestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -46,6 +47,9 @@ export type StoreSettings = {
   contactEmail: string;
   contactPhone: string;
   contactAddress: string;
+  socialFacebook?: string;
+  socialInstagram?: string;
+  socialTwitter?: string;
 };
 
 export type TrustBadge = {
@@ -113,6 +117,9 @@ const DEFAULT_SETTINGS: StoreSettings = {
   contactEmail: 'support@luxestore.com',
   contactPhone: '+1 (555) 123-4567',
   contactAddress: '123 Luxury Avenue, Beverly Hills, CA 90210',
+  socialFacebook: 'https://facebook.com',
+  socialInstagram: 'https://instagram.com',
+  socialTwitter: 'https://twitter.com',
 };
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────
@@ -141,6 +148,12 @@ export async function updateCategory(id: string, data: Partial<Omit<Category, 'i
 
 export async function deleteCategory(id: string) {
   await deleteDoc(doc(db, 'categories', id));
+}
+
+export function listenToCategories(callback: (categories: Category[]) => void) {
+  return onSnapshot(collection(db, 'categories'), (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Category)));
+  }, (error) => console.error('Categories listener error:', error));
 }
 
 // ─── PRODUCTS ────────────────────────────────────────────────────────────────
@@ -183,6 +196,19 @@ export async function deleteProduct(id: string) {
   await deleteDoc(doc(db, 'products', id));
 }
 
+export function listenToProducts(callback: (products: Product[]) => void) {
+  return onSnapshot(collection(db, 'products'), (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data(), stock: d.data().stock ?? 0 } as Product)));
+  }, (error) => console.error('Products listener error:', error));
+}
+
+export function listenToProductsLimited(batchSize: number, callback: (products: Product[]) => void) {
+  const q = query(collection(db, 'products'), orderBy('name'), fbLimit(batchSize));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data(), stock: d.data().stock ?? 0 } as Product)));
+  }, (error) => console.error('Products limited listener error:', error));
+}
+
 // ─── STORE SETTINGS ──────────────────────────────────────────────────────────
 
 export async function getSettings(): Promise<StoreSettings> {
@@ -202,6 +228,16 @@ export async function getSettings(): Promise<StoreSettings> {
 
 export async function saveSettings(settings: StoreSettings) {
   await setDoc(doc(db, 'settings', 'store'), settings);
+}
+
+export function listenToSettings(callback: (settings: StoreSettings) => void) {
+  return onSnapshot(doc(db, 'settings', 'store'), (snap) => {
+    if (snap.exists()) {
+      callback(snap.data() as StoreSettings);
+    } else {
+      callback(DEFAULT_SETTINGS);
+    }
+  }, (error) => console.error('Settings listener error:', error));
 }
 
 // ─── OWNER PASSWORD ──────────────────────────────────────────────────────────
@@ -278,6 +314,13 @@ export function clearCart() {
 export async function getOrders(): Promise<Order[]> {
   const snap = await getDocs(query(collection(db, 'orders'), orderBy('date', 'desc')));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+}
+
+export function listenToOrders(callback: (orders: Order[]) => void) {
+  const q = query(collection(db, 'orders'), orderBy('date', 'desc'));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+  }, (error) => console.error('Orders listener error:', error));
 }
 
 export async function getOrdersByIds(ids: string[]): Promise<Order[]> {
@@ -504,6 +547,16 @@ export async function getTrustBadges(): Promise<TrustBadge[]> {
 export async function saveTrustBadges(badges: TrustBadge[]) {
   const ref = doc(db, 'settings', 'trustBadges');
   await setDoc(ref, { list: badges });
+}
+
+export function listenToTrustBadges(callback: (badges: TrustBadge[]) => void) {
+  return onSnapshot(doc(db, 'settings', 'trustBadges'), (snap) => {
+    if (snap.exists()) {
+      callback(snap.data().list as TrustBadge[]);
+    } else {
+      callback(DEFAULT_BADGES);
+    }
+  }, (error) => console.error('Trust badges listener error:', error));
 }
 
 // ─── NEWSLETTER SUBSCRIBERS ──────────────────────────────────────────────────

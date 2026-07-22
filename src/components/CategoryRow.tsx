@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Icons } from './Icons';
-import { getCategories, Category } from '@/lib/firebaseDb';
+import { listenToCategories, Category } from '@/lib/firebaseDb';
 
 export default function CategoryRow() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -12,11 +12,11 @@ export default function CategoryRow() {
   const [showRight, setShowRight] = useState(true);
 
   useEffect(() => {
-    // Load active categories from Firestore
-    getCategories().then(cats => {
+    const unsub = listenToCategories(cats => {
       const activeCats = cats.filter(c => c.active);
       setCategories(activeCats);
     });
+    return () => unsub();
   }, []);
 
   const handleScroll = () => {
@@ -64,6 +64,7 @@ export default function CategoryRow() {
           gap: '1rem',
           overflowX: 'auto',
           padding: '0.5rem 40px',
+          justifyContent: 'center',
           scrollBehavior: 'smooth',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',

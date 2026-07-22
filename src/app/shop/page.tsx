@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import ProductCard from '@/components/ProductCard';
 import AddToCartButton from '@/components/AddToCartButton';
 import CategoryRow from '@/components/CategoryRow';
-import { getProductsLimited, Product, getSettings, StoreSettings, getCategories, Category, getTrustBadges, subscribeToNewsletter, TrustBadge } from '@/lib/firebaseDb';
+import { listenToProductsLimited, Product, listenToSettings, StoreSettings, listenToCategories, Category, listenToTrustBadges, subscribeToNewsletter, TrustBadge } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './page.module.css';
 
@@ -38,27 +38,21 @@ export default function Shop() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-  // Fetch initial batch of products and other data with error handling
-  const fetchData = async () => {
-    try {
-      const [prods, cats, sets, bdgs] = await Promise.all([
-        getProductsLimited(12),
-        getCategories(),
-        getSettings(),
-        getTrustBadges()
-      ]);
-      setAllProducts(prods);
-      setCategories(cats);
-      setSettings(sets);
-      setBadges(bdgs);
-    } catch (error) {
-      console.error('Error fetching initial data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchData();
-}, []);
+    // Set up real-time subscriptions
+    const unsubProducts = listenToProductsLimited(12, (prods) => setAllProducts(prods));
+    const unsubCategories = listenToCategories((cats) => setCategories(cats));
+    const unsubSettings = listenToSettings((sets) => setSettings(sets));
+    const unsubBadges = listenToTrustBadges((bdgs) => setBadges(bdgs));
+
+    setLoading(false);
+
+    return () => {
+      unsubProducts();
+      unsubCategories();
+      unsubSettings();
+      unsubBadges();
+    };
+  }, []);
 
   // Timer: persist end time in localStorage
   useEffect(() => {
@@ -463,9 +457,9 @@ export default function Shop() {
                 Curating luxury, high-end electronics, and premium fashion collections designed for the modern connoisseur worldwide.
               </p>
               <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                <span style={{ fontSize: '1.2rem', cursor: 'pointer' }}>📘</span>
-                <span style={{ fontSize: '1.2rem', cursor: 'pointer' }}>📸</span>
-                <span style={{ fontSize: '1.2rem', cursor: 'pointer' }}>🐦</span>
+                <a href={settings?.socialFacebook || '#'} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', display: 'flex', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}><Icons.Facebook width="20" height="20" /></a>
+                <a href={settings?.socialInstagram || '#'} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', display: 'flex', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}><Icons.Instagram width="20" height="20" /></a>
+                <a href={settings?.socialTwitter || '#'} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', display: 'flex', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}><Icons.Twitter width="20" height="20" /></a>
               </div>
             </div>
 
@@ -494,9 +488,9 @@ export default function Shop() {
             <div className={styles.footerCol}>
               <h3>Get in Touch</h3>
               <ul className={styles.footerLinks}>
-                <li style={{ fontSize: '0.9rem' }}>📧 support@luxestore.com</li>
-                <li style={{ fontSize: '0.9rem' }}>📞 +1 (555) 123-4567</li>
-                <li style={{ fontSize: '0.9rem', lineHeight: 1.6 }}>📍 123 Luxury Avenue, Beverly Hills, CA 90210</li>
+                <li style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Mail width="16" height="16" /> support@luxestore.com</li>
+                <li style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Phone width="16" height="16" /> +1 (555) 123-4567</li>
+                <li style={{ fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: '8px' }}><Icons.MapPin width="16" height="16" style={{ marginTop: '3px' }} /> <span>123 Luxury Avenue, Beverly Hills, CA 90210</span></li>
               </ul>
             </div>
           </div>

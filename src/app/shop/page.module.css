@@ -183,8 +183,10 @@
 
 /* Products Search & Filters section */
 .filterBar {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   padding: 1.5rem;
   margin-bottom: 2.5rem;

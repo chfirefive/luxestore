@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Icons } from '@/components/Icons';
-import { getOrders, Order } from '@/lib/firebaseDb';
+import { listenToOrders, Order } from '@/lib/firebaseDb';
 import styles from './Orders.module.css';
 
 export default function OwnerOrders() {
@@ -13,9 +13,11 @@ export default function OwnerOrders() {
   const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Ready' | 'Cancelled'>('All');
 
   useEffect(() => {
-    getOrders()
-      .then(data => { setOrders(data); setLoading(false); })
-      .catch(err => { console.error('Failed to load orders:', err); setLoading(false); });
+    const unsub = listenToOrders(data => {
+      setOrders(data);
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   const handleMarkReady = async (orderId: string) => {

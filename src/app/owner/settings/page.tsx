@@ -98,6 +98,21 @@ export default function SettingsPage() {
               <input id="contactAddress" name="contactAddress" type="text" value={settings.contactAddress} onChange={e => handleChange('contactAddress', e.target.value)} required style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
             </div>
 
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label htmlFor="socialFacebook" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Facebook Link</label>
+                <input id="socialFacebook" name="socialFacebook" type="url" value={settings.socialFacebook || ''} onChange={e => handleChange('socialFacebook', e.target.value)} placeholder="https://facebook.com/..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label htmlFor="socialInstagram" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Instagram Link</label>
+                <input id="socialInstagram" name="socialInstagram" type="url" value={settings.socialInstagram || ''} onChange={e => handleChange('socialInstagram', e.target.value)} placeholder="https://instagram.com/..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label htmlFor="socialTwitter" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Twitter Link</label>
+                <input id="socialTwitter" name="socialTwitter" type="url" value={settings.socialTwitter || ''} onChange={e => handleChange('socialTwitter', e.target.value)} placeholder="https://twitter.com/..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
+              </div>
+            </div>
+
             <button type="submit" disabled={saving} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: saving ? 0.7 : 1 }}>
               <Icons.Check /> {saving ? 'Saving...' : 'Save Settings'}
             </button>
