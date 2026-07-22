@@ -488,9 +488,9 @@ export default function Shop() {
             <div className={styles.footerCol}>
               <h3>Get in Touch</h3>
               <ul className={styles.footerLinks}>
-                <li style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Mail width="16" height="16" /> support@luxestore.com</li>
-                <li style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Phone width="16" height="16" /> +1 (555) 123-4567</li>
-                <li style={{ fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: '8px' }}><Icons.MapPin width="16" height="16" style={{ marginTop: '3px' }} /> <span>123 Luxury Avenue, Beverly Hills, CA 90210</span></li>
+                <li style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Mail width="16" height="16" /> {settings?.contactEmail || 'support@luxestore.com'}</li>
+                <li style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Phone width="16" height="16" /> {settings?.contactPhone || '+1 (555) 123-4567'}</li>
+                <li style={{ fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: '8px' }}><Icons.MapPin width="16" height="16" style={{ marginTop: '3px' }} /> <span>{settings?.contactAddress || '123 Luxury Avenue, Beverly Hills, CA 90210'}</span></li>
               </ul>
             </div>
           </div>
