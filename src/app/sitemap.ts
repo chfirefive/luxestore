@@ -5,7 +5,8 @@ import { getCategories } from '@/lib/firebaseDb';
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://luxestore.vercel.app';
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://luxestorepay.vercel.app';
+
 
   const [products, categories] = await Promise.all([
     getProducts().catch(() => []),
