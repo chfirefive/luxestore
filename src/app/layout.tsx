@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://luxestorepay.vercel.app';
 
@@ -98,8 +99,10 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <div className="global-bg-overlay" />
-        {children}
+        <AuthProvider>
+          <div className="global-bg-overlay" />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

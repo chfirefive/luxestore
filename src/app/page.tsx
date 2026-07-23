@@ -16,7 +16,7 @@ export default function Gateway() {
       {/* Header Logo */}
       <div className={styles.logoHeader}>
         <div style={{ color: 'var(--primary)' }}><Icons.Store /></div>
-        <span className={styles.logoText}>LuxeStore</span>
+        <h1 className={styles.logoText} style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit', display: 'inline-block' }}>LuxeStore</h1>
       </div>
 
       {/* 3D Flip Card */}

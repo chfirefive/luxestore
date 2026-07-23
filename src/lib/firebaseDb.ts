@@ -97,6 +97,18 @@ export type Client = {
   date: string;
 };
 
+export type UserProfile = {
+  uid: string;
+  email: string;
+  displayName?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 // ─── DEFAULTS (seeded on first load if Firestore is empty) ──────────────────
 
 const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
@@ -497,6 +509,57 @@ export async function markOrderReady(id: string) {
 export async function cancelOrder(id: string) {
   await updateDoc(doc(db, 'orders', id), {
     status: 'Cancelled',
+  });
+}
+
+// ─── USER PROFILES ───────────────────────────────────────────────────────────
+
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    return snap.exists() ? ({ uid: snap.id, ...snap.data() } as UserProfile) : null;
+  } catch (err) {
+    console.error('Failed to fetch user profile:', err);
+    return null;
+  }
+}
+
+export async function saveUserProfile(profile: UserProfile): Promise<void> {
+  try {
+    const userRef = doc(db, 'users', profile.uid);
+    const existing = await getDoc(userRef);
+    if (existing.exists()) {
+      await updateDoc(userRef, {
+        ...profile,
+        updatedAt: new Date().toISOString(),
+      });
+    } else {
+      await setDoc(userRef, {
+        ...profile,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error('Failed to save user profile:', err);
+  }
+}
+
+export function listenToOrdersByEmail(email: string, callback: (orders: Order[]) => void) {
+  if (!email) return () => {};
+  const sanitized = email.trim().toLowerCase();
+  const q = query(
+    collection(db, 'orders'),
+    where('email', '==', sanitized)
+  );
+  return onSnapshot(q, (snap) => {
+    const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+    // Sort in memory by date descending
+    orders.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    callback(orders);
+  }, (error) => {
+    console.error('Error listening to user orders by email:', error);
+    callback([]);
   });
 }
 

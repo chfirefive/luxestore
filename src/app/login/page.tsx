@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebaseClient';
@@ -22,6 +24,25 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Handle Google Sign-In redirect result if popup was blocked/redirect used
+  useEffect(() => {
+    getRedirectResult(auth).then(async (result) => {
+      if (result && result.user && result.user.email) {
+        sessionStorage.setItem('buyer_auth', result.user.email);
+        localStorage.setItem('buyer_auth_email', result.user.email);
+        const { saveUserProfile } = await import('@/lib/firebaseDb');
+        await saveUserProfile({
+          uid: result.user.uid,
+          email: result.user.email.toLowerCase(),
+          displayName: result.user.displayName || result.user.email.split('@')[0],
+        });
+        router.push('/shop/profile');
+      }
+    }).catch((err) => {
+      console.error('Redirect sign-in error:', err);
+    });
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -29,13 +50,24 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      let userCredential;
       if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
       }
-      sessionStorage.setItem('buyer_auth', email);
-      router.push('/shop');
+
+      if (userCredential.user && userCredential.user.email) {
+        sessionStorage.setItem('buyer_auth', userCredential.user.email);
+        localStorage.setItem('buyer_auth_email', userCredential.user.email);
+        const { saveUserProfile } = await import('@/lib/firebaseDb');
+        await saveUserProfile({
+          uid: userCredential.user.uid,
+          email: userCredential.user.email.toLowerCase(),
+          displayName: userCredential.user.displayName || email.split('@')[0],
+        });
+      }
+      router.push('/shop/profile');
     } catch (err: unknown) {
       const firebaseError = err as { code?: string };
       if (firebaseError.code === 'auth/user-not-found' || firebaseError.code === 'auth/wrong-password' || firebaseError.code === 'auth/invalid-credential') {
@@ -55,13 +87,44 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setError('');
     setIsLoading(true);
+    const provider = new GoogleAuthProvider();
+
     try {
-      const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      sessionStorage.setItem('buyer_auth', result.user.email || '');
-      router.push('/shop');
-    } catch {
-      setError('Google sign-in failed. Please try again.');
+      if (result.user && result.user.email) {
+        sessionStorage.setItem('buyer_auth', result.user.email);
+        localStorage.setItem('buyer_auth_email', result.user.email);
+        const { saveUserProfile } = await import('@/lib/firebaseDb');
+        await saveUserProfile({
+          uid: result.user.uid,
+          email: result.user.email.toLowerCase(),
+          displayName: result.user.displayName || result.user.email.split('@')[0],
+        });
+      }
+      router.push('/shop/profile');
+    } catch (err: unknown) {
+      console.error('Google Sign-In Error:', err);
+      const firebaseError = err as { code?: string; message?: string };
+      
+      if (firebaseError.code === 'auth/popup-blocked') {
+        // Fallback to redirect if popup blocked
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirErr) {
+          console.error('Redirect error:', redirErr);
+        }
+      }
+
+      if (firebaseError.code === 'auth/operation-not-allowed') {
+        setError('Google Sign-In is not enabled yet in your Firebase Console (Authentication → Sign-in method → Enable Google). Please use Email Sign-In above or enable Google Provider in Firebase.');
+      } else if (firebaseError.code === 'auth/unauthorized-domain') {
+        setError('Your site domain (luxestorepay.vercel.app) needs to be added in Firebase Console under Authentication → Settings → Authorized Domains. Please use Email Sign-In in the meantime.');
+      } else if (firebaseError.code === 'auth/popup-closed-by-user') {
+        setError('Sign in popup was closed before completing.');
+      } else {
+        setError(`Google sign-in error (${firebaseError.code || 'failed'}). Please try Email Sign In above or enable Google provider in Firebase console.`);
+      }
     } finally {
       setIsLoading(false);
     }

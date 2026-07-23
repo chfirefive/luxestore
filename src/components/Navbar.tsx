@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Icons } from '@/components/Icons';
 import { getCart } from '@/lib/firebaseDb';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebaseClient';
+import { useAuth } from '@/context/AuthContext';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
+  const { user, userProfile, logout } = useAuth();
   const [buyerAuth, setBuyerAuth] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [shouldWobble, setShouldWobble] = useState(false);
@@ -25,12 +25,12 @@ export default function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-    const authEmail = sessionStorage.getItem('buyer_auth');
+    const authEmail = user?.email || userProfile?.email || (typeof window !== 'undefined' ? sessionStorage.getItem('buyer_auth') : '');
     if (authEmail) setBuyerAuth(authEmail);
     updateCart();
     window.addEventListener('cart-updated', updateCart);
     return () => window.removeEventListener('cart-updated', updateCart);
-  }, []);
+  }, [user, userProfile]);
 
   // Close menu on route change / resize
   useEffect(() => {
@@ -40,17 +40,19 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    try { await signOut(auth); } catch (e) { console.error(e); }
-    sessionStorage.removeItem('buyer_auth');
+    try { await logout(); } catch (e) { console.error(e); }
     setBuyerAuth('');
     setMenuOpen(false);
   };
+
+  const currentEmail = user?.email || userProfile?.email || buyerAuth;
+  const displayName = userProfile?.displayName || user?.displayName || (currentEmail ? currentEmail.split('@')[0] : '');
 
   const navLinks = [
     { href: '/shop', label: 'Home' },
     { href: '/shop/about', label: 'About' },
     { href: '/shop/contact', label: 'Contact' },
-    { href: '/shop/orders', label: 'Orders' },
+    { href: currentEmail ? '/shop/profile' : '/shop/orders', label: currentEmail ? 'My Account' : 'Orders' },
   ];
 
   return (
@@ -73,12 +75,13 @@ export default function Navbar() {
 
           {/* Desktop Auth + Cart */}
           <div className={`${styles.authButtons} ${styles.desktopAuth}`}>
-            {mounted && buyerAuth ? (
+            {mounted && currentEmail ? (
               <>
-                <span className={styles.hiUser}>
-                  Hi, <strong>{buyerAuth.split('@')[0]}</strong>
-                </span>
-                <button onClick={handleLogout} className={styles.loginBtn}>
+                <Link href="/shop/profile" className={styles.hiUser} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Icons.User style={{ width: '18px', height: '18px', color: 'var(--primary)' }} />
+                  <span>Hi, <strong>{displayName}</strong></span>
+                </Link>
+                <button onClick={handleLogout} className={styles.loginBtn} title="Sign Out">
                   <Icons.Logout /> Logout
                 </button>
               </>
@@ -149,9 +152,12 @@ export default function Navbar() {
         </nav>
 
         <div className={styles.drawerFooter}>
-          {mounted && buyerAuth ? (
+          {mounted && currentEmail ? (
             <>
-              <p className={styles.drawerUser}>Signed in as <strong>{buyerAuth.split('@')[0]}</strong></p>
+              <Link href="/shop/profile" className={styles.drawerUser} onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'block' }}>
+                Signed in as <strong>{displayName}</strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '2px' }}>Manage Profile & Orders →</div>
+              </Link>
               <button onClick={handleLogout} className={`${styles.loginBtn} ${styles.drawerLogout}`}>
                 <Icons.Logout /> Logout
               </button>
