@@ -229,8 +229,8 @@ export default function UserProfilePage() {
               {/* ─── TAB 2: ADDRESS & PROFILE DETAILS ─── */}
               {activeTab === 'address' && (
                 <div>
-                  <h2 style={{ fontSize: '1.4rem', marginBottom: '0.5rem', fontWeight: 700 }}>Personal Information & Address</h2>
-                  <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                  <h2 style={{ fontSize: '1.45rem', marginBottom: '0.5rem', fontWeight: 700, color: '#ffffff' }}>Personal Information & Address</h2>
+                  <p style={{ color: '#e2e8f0', marginBottom: '1.75rem', fontSize: '0.95rem' }}>
                     Save your default shipping address and phone number for faster 1-click checkout.
                   </p>
 
