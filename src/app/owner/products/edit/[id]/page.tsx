@@ -167,32 +167,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label htmlFor="product-bg-gradient" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Background Gradient (Hex or CSS value)</label>
-              <input id="product-bg-gradient" name="product-bg-gradient" type="text" value={backgroundGradient} onChange={e => setBackgroundGradient(e.target.value)} placeholder="e.g. linear-gradient(to bottom, #ff7e5f, #feb47b) or #ff7e5f" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label htmlFor="product-box-image" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Upload Shoebox Image (Optional)</label>
-              <input id="product-box-image" name="product-box-image" type="file" accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setBoxImageUrl(reader.result as string);
-                    reader.readAsDataURL(file);
-                  } else setBoxImageUrl('');
-                }}
-                style={{ padding: '7px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
-              />
-              {boxImageUrl && (
-                <div style={{ position: 'relative', width: '100px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)', marginTop: '0.5rem' }}>
-                  <img src={boxImageUrl} alt="Shoebox Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <button type="button" onClick={() => setBoxImageUrl('')} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                </div>
-              )}
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label htmlFor="product-bg-gradient" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Background Gradient (Hex or CSS value)</label>
+            <input id="product-bg-gradient" name="product-bg-gradient" type="text" value={backgroundGradient} onChange={e => setBackgroundGradient(e.target.value)} placeholder="e.g. linear-gradient(to bottom, #ff7e5f, #feb47b) or #ff7e5f" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
