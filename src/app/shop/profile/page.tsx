@@ -7,11 +7,14 @@ import { useAuth } from '@/context/AuthContext';
 import { listenToOrdersByEmail, Order } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './profile.module.css';
+import { useCurrency } from '@/hooks/useCurrency';
+import { ALL_CURRENCIES } from '@/lib/currency';
 
 export default function UserProfilePage() {
   const router = useRouter();
   const { user, userProfile, loading, logout, updateProfileData } = useAuth();
   const [activeTab, setActiveTab] = useState<'orders' | 'address' | 'security'>('orders');
+  const { currency, setCurrency, formatPrice } = useCurrency();
 
   // Orders State
   const [orders, setOrders] = useState<Order[]>([]);
@@ -215,7 +218,7 @@ export default function UserProfilePage() {
                                 Shipping to: <strong>{order.address}</strong>
                               </div>
                               <div className={styles.orderTotal}>
-                                Total: ${order.total.toFixed(2)}
+                                Total: {formatPrice(order.total)}
                               </div>
                             </div>
                           </div>
@@ -293,6 +296,32 @@ export default function UserProfilePage() {
                         className={styles.input}
                         placeholder="10001"
                       />
+                    </div>
+
+                    {/* Currency Preference */}
+                    <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                      <label htmlFor="currency-select" className={styles.label}>
+                        💱 Display Currency
+                      </label>
+                      <select
+                        id="currency-select"
+                        value={currency.code}
+                        onChange={e => {
+                          const selected = ALL_CURRENCIES.find(c => c.code === e.target.value);
+                          if (selected) setCurrency(selected);
+                        }}
+                        className={styles.input}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {ALL_CURRENCIES.map(c => (
+                          <option key={c.code} value={c.code}>
+                            {c.symbol} {c.name} ({c.code})
+                          </option>
+                        ))}
+                      </select>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                        Auto-detected from your location. You can override it here — it will be remembered.
+                      </p>
                     </div>
 
                     <div className={styles.fullWidth} style={{ marginTop: '0.5rem' }}>

@@ -7,6 +7,7 @@ import { ShoppingBag, ArrowLeft, Heart, ChevronRight, Info } from 'lucide-react'
 import { addToCart, Product } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './ProductDetails.module.css';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface ProductDetailsClientProps {
   product: Product;
@@ -25,6 +26,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showDescModal, setShowDescModal] = useState(false);
+  const { formatPrice, currency } = useCurrency();
   
   const isOutOfStock = product.stock !== undefined && product.stock <= 0;
 
@@ -209,8 +211,8 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
         <div className={styles.bottomBar}>
           
           <div className={styles.priceBlock}>
-            <div className={styles.priceValue}>${product.price.toFixed(0)}</div>
-            <div className={styles.priceLabel}>Price</div>
+            <div className={styles.priceValue}>{formatPrice(product.price)}</div>
+            <div className={styles.priceLabel}>{currency.code}</div>
           </div>
           
           {isOutOfStock ? (

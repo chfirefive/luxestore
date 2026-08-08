@@ -7,6 +7,7 @@ import AddToCartButton from './AddToCartButton';
 import { Product } from '@/lib/firebaseDb';
 import React from 'react';
 import styles from './ProductCard.module.css';
+import { useCurrency } from '@/hooks/useCurrency';
 
 type ProductCardProps = {
   id: string | number;
@@ -20,6 +21,7 @@ type ProductCardProps = {
 
 const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, description, comments = 0, product }) => {
   const [wishlisted, setWishlisted] = useState(false);
+  const { formatPrice } = useCurrency();
   const stock = product?.stock ?? 99;
   const isLowStock = stock > 0 && stock <= 5;
   const isOutOfStock = stock <= 0;
@@ -57,7 +59,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
         <div className={styles.cardBody}>
           <h3 className={styles.productName}>{name}</h3>
           <div className={styles.priceRow}>
-            <p className={styles.price}>${price.toFixed(2)}</p>
+            <p className={styles.price}>{formatPrice(price)}</p>
             <span className={styles.comments}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />

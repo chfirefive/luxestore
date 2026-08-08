@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import { getCart, removeFromCart, updateCartQty, clearCart, placeOrder, CartItem, getOrdersByIds, checkPendingOrders } from '@/lib/firebaseDb';
 import { useAuth } from '@/context/AuthContext';
 import { Icons } from '@/components/Icons';
+import { useCurrency } from '@/hooks/useCurrency';
 
 type CheckoutForm = {
   name: string;
@@ -18,6 +19,7 @@ type CheckoutForm = {
 export default function CartPage() {
   const router = useRouter();
   const { user, userProfile } = useAuth();
+  const { formatPrice, currency } = useCurrency();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [step, setStep] = useState<'cart' | 'checkout' | 'placing'>('cart');
   const [form, setForm] = useState<CheckoutForm>({ name: '', email: '', phone: '', address: '', notes: '' });
@@ -192,14 +194,14 @@ export default function CartPage() {
                           </span>
                         )}
                       </div>
-                      <p style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem' }}>${item.price.toFixed(2)}</p>
+                      <p style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem' }}>{formatPrice(item.price)}</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <button onClick={() => updateCartQty(item.productId, item.qty - 1, item.size, item.color)} className="neumorphic-btn" style={{ width: '32px', height: '32px', cursor: 'pointer', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>−</button>
                       <span style={{ fontWeight: 600, minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
                       <button onClick={() => updateCartQty(item.productId, item.qty + 1, item.size, item.color)} className="neumorphic-btn" style={{ width: '32px', height: '32px', cursor: 'pointer', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>+</button>
                     </div>
-                    <span style={{ fontWeight: 700, minWidth: '80px', textAlign: 'right' }}>${(item.price * item.qty).toFixed(2)}</span>
+                    <span style={{ fontWeight: 700, minWidth: '80px', textAlign: 'right' }}>{formatPrice(item.price * item.qty)}</span>
                     <button onClick={() => removeFromCart(item.productId, item.size, item.color)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}>
                       <Icons.Trash />
                     </button>
@@ -273,19 +275,22 @@ export default function CartPage() {
               {cart.map(item => (
                 <div key={item.productId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{item.name} × {item.qty}</span>
-                  <span style={{ fontWeight: 600 }}>${(item.price * item.qty).toFixed(2)}</span>
+                  <span style={{ fontWeight: 600 }}>{formatPrice(item.price * item.qty)}</span>
                 </div>
               ))}
             </div>
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                <span>Subtotal</span><span style={{ color: 'var(--text-muted)' }}>${subtotal.toFixed(2)}</span>
+                <span>Subtotal</span><span style={{ color: 'var(--text-muted)' }}>{formatPrice(subtotal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                <span>Shipping</span><span>${shipping.toFixed(2)}</span>
+                <span>Shipping</span><span>{formatPrice(shipping)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.2rem', marginTop: '0.5rem' }}>
-                <span>Total</span><span style={{ color: 'var(--primary)' }}>${total.toFixed(2)}</span>
+                <span>Total</span><span style={{ color: 'var(--primary)' }}>{formatPrice(total)}</span>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'right' }}>
+                Prices shown in {currency.name} ({currency.code})
               </div>
             </div>
 
