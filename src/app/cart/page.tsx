@@ -32,18 +32,7 @@ export default function CartPage() {
     return () => window.removeEventListener('cart-updated', refreshCart);
   }, []);
 
-  // Pre-fill form from logged in user profile
-  useEffect(() => {
-    if (userProfile || user) {
-      setForm(f => ({
-        ...f,
-        name: f.name || userProfile?.displayName || user?.displayName || '',
-        email: f.email || userProfile?.email || user?.email || '',
-        phone: f.phone || userProfile?.phone || '',
-        address: f.address || (userProfile?.address ? `${userProfile.address}${userProfile.city ? ', ' + userProfile.city : ''}` : ''),
-      }));
-    }
-  }, [userProfile, user]);
+
 
   const subtotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const shipping = subtotal > 0 ? 9.99 : 0;

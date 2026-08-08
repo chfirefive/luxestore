@@ -17,9 +17,56 @@ export default function ContactPage() {
   const phone = settings?.contactPhone || '+1 (555) 123-4567';
   const address = settings?.contactAddress || '123 Luxury Avenue, Beverly Hills, CA 90210';
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          subject: `New Contact Form Message from ${msgForm.name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 40px 20px; max-width: 600px; margin: 0 auto; border: 1px solid #334155; border-radius: 12px;">
+              <div style="text-align: center; border-bottom: 1px solid #334155; padding-bottom: 20px; margin-bottom: 20px;">
+                <h1 style="color: #6366f1; margin: 0; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">LuxeStore</h1>
+              </div>
+              
+              <h2 style="font-size: 20px; color: #6366f1; text-align: center; font-weight: 600; margin-bottom: 20px;">
+                New Contact Form Inquiry
+              </h2>
+              
+              <div style="background-color: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin: 25px 0;">
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 6px 0; color: #94a3b8; width: 100px;">Name:</td>
+                    <td style="padding: 6px 0; font-weight: 600; color: #f8fafc;">${msgForm.name}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #94a3b8;">Email:</td>
+                    <td style="padding: 6px 0; font-weight: 600; color: #f8fafc;">${msgForm.email}</td>
+                  </tr>
+                </table>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155;">
+                  <h4 style="margin: 0 0 10px 0; color: #94a3b8;">Message:</h4>
+                  <p style="margin: 0; color: #f8fafc; line-height: 1.6; font-style: italic;">
+                    "${msgForm.message}"
+                  </p>
+                </div>
+              </div>
+            </div>
+          `
+        })
+      });
+      if (res.ok) {
+        setSent(true);
+      } else {
+        console.error('Failed to send contact message via API');
+      }
+    } catch (err) {
+      console.error('Failed to send contact message:', err);
+    }
   };
 
   return (
