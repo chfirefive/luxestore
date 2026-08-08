@@ -38,6 +38,10 @@ export type Product = {
   description: string;
   archived?: boolean;
   stock: number;
+  backgroundGradient?: string;
+  boxImageUrl?: string;
+  sizes?: string[];
+  colors?: { name: string, hex: string }[];
 };
 
 export type StoreSettings = {
@@ -71,6 +75,8 @@ export type CartItem = {
   price: number;
   imageUrl?: string;
   qty: number;
+  size?: string;
+  color?: string;
 };
 
 export type Order = {
@@ -85,6 +91,7 @@ export type Order = {
   date: string;
   status: 'Pending' | 'Ready' | 'Cancelled';
   readyDate?: string;
+  cancelledDate?: string;
 };
 
 export type Client = {
@@ -280,10 +287,14 @@ export function getCart(): CartItem[] {
   return stored ? JSON.parse(stored) : [];
 }
 
-export function addToCart(product: Product) {
+export function addToCart(product: Product, size?: string, color?: string) {
   if (typeof window === 'undefined') return;
   const cart = getCart();
-  const existing = cart.find(c => c.productId === product.id);
+  const existing = cart.find(c => 
+    c.productId === product.id && 
+    c.size === size && 
+    c.color === color
+  );
   if (existing) {
     existing.qty += 1;
   } else {
@@ -293,23 +304,25 @@ export function addToCart(product: Product) {
       price: product.price,
       imageUrl: product.imageUrl,
       qty: 1,
+      size,
+      color
     });
   }
   localStorage.setItem('luxe_cart', JSON.stringify(cart));
   window.dispatchEvent(new Event('cart-updated'));
 }
 
-export function removeFromCart(productId: string) {
+export function removeFromCart(productId: string, size?: string, color?: string) {
   if (typeof window === 'undefined') return;
-  const cart = getCart().filter(c => c.productId !== productId);
+  const cart = getCart().filter(c => !(c.productId === productId && c.size === size && c.color === color));
   localStorage.setItem('luxe_cart', JSON.stringify(cart));
   window.dispatchEvent(new Event('cart-updated'));
 }
 
-export function updateCartQty(productId: string, qty: number) {
+export function updateCartQty(productId: string, qty: number, size?: string, color?: string) {
   if (typeof window === 'undefined') return;
   const cart = getCart()
-    .map(c => c.productId === productId ? { ...c, qty } : c)
+    .map(c => (c.productId === productId && c.size === size && c.color === color) ? { ...c, qty } : c)
     .filter(c => c.qty > 0);
   localStorage.setItem('luxe_cart', JSON.stringify(cart));
   window.dispatchEvent(new Event('cart-updated'));
@@ -509,7 +522,58 @@ export async function markOrderReady(id: string) {
 export async function cancelOrder(id: string) {
   await updateDoc(doc(db, 'orders', id), {
     status: 'Cancelled',
+    cancelledDate: new Date().toISOString(),
   });
+}
+
+/**
+ * Automatically delete expired orders from Firestore:
+ * - Cancelled orders older than 3 days
+ * - Ready (confirmed) orders older than 14 days
+ */
+export async function cleanupExpiredOrders(): Promise<{ deletedCancelled: number; deletedReady: number }> {
+  const now = Date.now();
+  const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+  const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+  let deletedCancelled = 0;
+  let deletedReady = 0;
+
+  try {
+    // 1. Clean up cancelled orders (>3 days)
+    const cancelledSnap = await getDocs(
+      query(collection(db, 'orders'), where('status', '==', 'Cancelled'))
+    );
+    for (const d of cancelledSnap.docs) {
+      const data = d.data();
+      const cancelDate = data.cancelledDate ? new Date(data.cancelledDate).getTime() : null;
+      // Fallback to order date if cancelledDate is missing (for orders cancelled before this update)
+      const fallbackDate = data.date ? new Date(data.date).getTime() : null;
+      const referenceDate = cancelDate || fallbackDate;
+      if (referenceDate && (now - referenceDate) > THREE_DAYS_MS) {
+        await deleteDoc(doc(db, 'orders', d.id));
+        deletedCancelled++;
+      }
+    }
+
+    // 2. Clean up ready/confirmed orders (>14 days)
+    const readySnap = await getDocs(
+      query(collection(db, 'orders'), where('status', '==', 'Ready'))
+    );
+    for (const d of readySnap.docs) {
+      const data = d.data();
+      const readyDate = data.readyDate ? new Date(data.readyDate).getTime() : null;
+      const fallbackDate = data.date ? new Date(data.date).getTime() : null;
+      const referenceDate = readyDate || fallbackDate;
+      if (referenceDate && (now - referenceDate) > FOURTEEN_DAYS_MS) {
+        await deleteDoc(doc(db, 'orders', d.id));
+        deletedReady++;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to cleanup expired orders:', err);
+  }
+
+  return { deletedCancelled, deletedReady };
 }
 
 // ─── USER PROFILES ───────────────────────────────────────────────────────────

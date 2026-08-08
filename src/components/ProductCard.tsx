@@ -25,7 +25,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
   const isOutOfStock = stock <= 0;
 
   return (
-    <div className={`card ${styles.productCard}`}>
+    <div className={`neumorphic-outer ${styles.productCard}`}>
       <Link href={`/shop/product/${id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className={styles.imageWrapper}>
           {image ? (

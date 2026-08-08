@@ -16,6 +16,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
   const [stock, setStock] = useState('0');
+  const [backgroundGradient, setBackgroundGradient] = useState('');
+  const [boxImageUrl, setBoxImageUrl] = useState('');
+  const [sizesStr, setSizesStr] = useState('');
+  const [colorsStr, setColorsStr] = useState('');
   const [archived, setArchived] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -31,6 +35,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setImageUrl(prod.imageUrl || '');
         setDescription(prod.description);
         setStock(prod.stock !== undefined ? prod.stock.toString() : '0');
+        setBackgroundGradient(prod.backgroundGradient || '');
+        setBoxImageUrl(prod.boxImageUrl || '');
+        setSizesStr(prod.sizes ? prod.sizes.join(', ') : '');
+        setColorsStr(prod.colors ? prod.colors.map(c => `${c.name} ${c.hex}`).join(', ') : '');
         setArchived(!!prod.archived);
       } else {
         setError('Product not found in Firestore');
@@ -46,6 +54,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       return;
     }
     setSaving(true);
+    const sizes = sizesStr.split(',').map(s => s.trim()).filter(Boolean);
+    const colors = colorsStr.split(',').map(c => {
+      const parts = c.trim().split(' ');
+      if (parts.length >= 2) {
+        const hex = parts.pop()!;
+        const name = parts.join(' ');
+        return { name, hex };
+      }
+      return null;
+    }).filter(Boolean) as {name: string, hex: string}[];
+
     try {
       await updateProduct(id, {
         name,
@@ -54,6 +73,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         imageUrl: imageUrl.trim() || "",
         description: description.trim() || 'No description provided.',
         stock: parseInt(stock) || 0,
+        backgroundGradient: backgroundGradient.trim(),
+        boxImageUrl: boxImageUrl.trim(),
+        sizes,
+        colors,
         archived,
       });
       router.push('/owner/products');
@@ -141,6 +164,46 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               <label htmlFor="product-description" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Description</label>
               <textarea id="product-description" name="product-description" value={description} onChange={e => setDescription(e.target.value)} rows={5} placeholder="Enter details about this product..."
                 style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem', resize: 'vertical', lineHeight: 1.6 }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="product-bg-gradient" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Background Gradient (Hex or CSS value)</label>
+              <input id="product-bg-gradient" name="product-bg-gradient" type="text" value={backgroundGradient} onChange={e => setBackgroundGradient(e.target.value)} placeholder="e.g. linear-gradient(to bottom, #ff7e5f, #feb47b) or #ff7e5f" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="product-box-image" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Upload Shoebox Image (Optional)</label>
+              <input id="product-box-image" name="product-box-image" type="file" accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setBoxImageUrl(reader.result as string);
+                    reader.readAsDataURL(file);
+                  } else setBoxImageUrl('');
+                }}
+                style={{ padding: '7px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
+              />
+              {boxImageUrl && (
+                <div style={{ position: 'relative', width: '100px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)', marginTop: '0.5rem' }}>
+                  <img src={boxImageUrl} alt="Shoebox Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button type="button" onClick={() => setBoxImageUrl('')} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="product-sizes" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Sizes (Comma separated)</label>
+              <input id="product-sizes" name="product-sizes" type="text" value={sizesStr} onChange={e => setSizesStr(e.target.value)} placeholder="e.g. 8, 9, 10, 10.5, 11" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label htmlFor="product-colors" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Colors (Format: Name #Hex, Name #Hex)</label>
+              <input id="product-colors" name="product-colors" type="text" value={colorsStr} onChange={e => setColorsStr(e.target.value)} placeholder="e.g. Red #ef4444, Blue #3b82f6" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
             </div>
           </div>
 

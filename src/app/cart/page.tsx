@@ -150,7 +150,7 @@ export default function CartPage() {
             {step === 'cart' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {cart.map(item => (
-                  <div key={item.productId} className="card animate-scale-in" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.25rem 1.5rem' }}>
+                  <div key={`${item.productId}-${item.size}-${item.color}`} className="neumorphic-outer animate-scale-in" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1.25rem 1.5rem', border: 'none' }}>
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', flexShrink: 0 }} />
                     ) : (
@@ -160,22 +160,30 @@ export default function CartPage() {
                     )}
                     <div style={{ flex: 1 }}>
                       <h3 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{item.name}</h3>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                        {item.size && <span style={{ background: 'var(--surface-hover)', padding: '2px 8px', borderRadius: '4px' }}>Size: {item.size}</span>}
+                        {item.color && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--surface-hover)', padding: '2px 8px', borderRadius: '4px' }}>
+                            Color: <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: item.color }} />
+                          </span>
+                        )}
+                      </div>
                       <p style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1.1rem' }}>${item.price.toFixed(2)}</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <button onClick={() => updateCartQty(item.productId, item.qty - 1)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-hover)', cursor: 'pointer', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>−</button>
+                      <button onClick={() => updateCartQty(item.productId, item.qty - 1, item.size, item.color)} className="neumorphic-btn" style={{ width: '32px', height: '32px', cursor: 'pointer', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>−</button>
                       <span style={{ fontWeight: 600, minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
-                      <button onClick={() => updateCartQty(item.productId, item.qty + 1)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-hover)', cursor: 'pointer', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>+</button>
+                      <button onClick={() => updateCartQty(item.productId, item.qty + 1, item.size, item.color)} className="neumorphic-btn" style={{ width: '32px', height: '32px', cursor: 'pointer', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-main)' }}>+</button>
                     </div>
                     <span style={{ fontWeight: 700, minWidth: '80px', textAlign: 'right' }}>${(item.price * item.qty).toFixed(2)}</span>
-                    <button onClick={() => removeFromCart(item.productId)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}>
+                    <button onClick={() => removeFromCart(item.productId, item.size, item.color)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}>
                       <Icons.Trash />
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="card animate-scale-in" style={{ padding: '2rem' }}>
+              <div className="neumorphic-outer animate-scale-in" style={{ padding: '2rem', border: 'none' }}>
                 <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 600 }}>Delivery Information</h2>
                 <form id="checkout-form" onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   {[
@@ -194,7 +202,8 @@ export default function CartPage() {
                         placeholder={placeholder}
                         value={form[key as keyof CheckoutForm]}
                         onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                        style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem' }}
+                        className="neumorphic-inner"
+                        style={{ padding: '12px', borderRadius: '10px', border: 'none', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem' }}
                       />
                     </div>
                   ))}
@@ -209,7 +218,8 @@ export default function CartPage() {
                       placeholder="Any special instructions for the owner? E.g. preferred delivery time, gift wrapping, colour preference, measurements..."
                       value={form.notes}
                       onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                      style={{ padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem', resize: 'vertical', lineHeight: 1.6 }}
+                      className="neumorphic-inner"
+                      style={{ padding: '12px', borderRadius: '10px', border: 'none', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem', resize: 'vertical', lineHeight: 1.6 }}
                     />
                   </div>
                   {formError && <p style={{ color: '#ef4444', fontSize: '0.9rem' }}>{formError}</p>}
@@ -219,7 +229,7 @@ export default function CartPage() {
           </div>
 
           {/* Right: Order Summary */}
-          <div className="card animate-scale-in" style={{ padding: '2rem', position: 'sticky', top: '100px', animationDelay: '0.1s' }}>
+          <div className="neumorphic-outer animate-scale-in" style={{ padding: '2rem', position: 'sticky', top: '100px', animationDelay: '0.1s', border: 'none' }}>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '1.5rem' }}>Order Summary</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
               {cart.map(item => (
@@ -285,11 +295,9 @@ export default function CartPage() {
           padding: '20px',
           animation: 'fadeIn 0.3s ease forwards'
         }}>
-          <div className="card animate-scale-in" style={{
+          <div className="neumorphic-outer animate-scale-in" style={{
             maxWidth: '500px',
             width: '100%',
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
             padding: '2.5rem 2rem',
             boxShadow: 'var(--shadow-lg)',
             display: 'flex',

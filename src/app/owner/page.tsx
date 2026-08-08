@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Icons } from '@/components/Icons';
-import { listenToOrders, Order } from '@/lib/firebaseDb';
+import { listenToOrders, cleanupExpiredOrders, Order } from '@/lib/firebaseDb';
 import styles from './Orders.module.css';
 
 export default function OwnerOrders() {
@@ -11,8 +11,18 @@ export default function OwnerOrders() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Ready' | 'Cancelled'>('All');
+  const [cleanupInfo, setCleanupInfo] = useState<string | null>(null);
 
   useEffect(() => {
+    // Run cleanup on mount — removes expired cancelled (>3d) and ready (>14d) orders
+    cleanupExpiredOrders().then(({ deletedCancelled, deletedReady }) => {
+      const total = deletedCancelled + deletedReady;
+      if (total > 0) {
+        setCleanupInfo(`Auto-cleaned ${deletedCancelled} expired cancelled + ${deletedReady} expired confirmed orders.`);
+        setTimeout(() => setCleanupInfo(null), 6000);
+      }
+    }).catch(err => console.error('Cleanup failed:', err));
+
     const unsub = listenToOrders(data => {
       setOrders(data);
       setLoading(false);
@@ -67,7 +77,7 @@ export default function OwnerOrders() {
         throw new Error(data.error || 'Failed response');
       }
       setOrders(prev =>
-        prev.map(o => o.id === orderId ? { ...o, status: 'Cancelled' as const } : o)
+        prev.map(o => o.id === orderId ? { ...o, status: 'Cancelled' as const, cancelledDate: new Date().toISOString() } : o)
       );
     } catch (err) {
       console.error('Failed to cancel order:', err);
@@ -141,6 +151,26 @@ export default function OwnerOrders() {
           <Icons.Export /> Export CSV
         </button>
       </div>
+
+      {/* Auto-Cleanup Notification */}
+      {cleanupInfo && (
+        <div style={{
+          background: 'rgba(16,185,129,0.1)',
+          border: '1px solid #10b981',
+          color: '#10b981',
+          padding: '1rem 1.25rem',
+          borderRadius: '10px',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '0.9rem',
+          fontWeight: 500,
+          animation: 'slideUp 0.4s ease'
+        }}>
+          🧹 {cleanupInfo}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -283,6 +313,16 @@ export default function OwnerOrders() {
                       <span className={isReady ? styles.statusReady : isCancelled ? styles.statusCancelled : styles.statusPending}>
                         {order.status}
                       </span>
+                      {isCancelled && (() => {
+                        const ref = order.cancelledDate ? new Date(order.cancelledDate) : new Date(order.date);
+                        const daysLeft = Math.max(0, 3 - Math.floor((Date.now() - ref.getTime()) / (1000 * 60 * 60 * 24)));
+                        return <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '3px' }}>Auto-removes in {daysLeft}d</div>;
+                      })()}
+                      {isReady && (() => {
+                        const ref = order.readyDate ? new Date(order.readyDate) : new Date(order.date);
+                        const daysLeft = Math.max(0, 14 - Math.floor((Date.now() - ref.getTime()) / (1000 * 60 * 60 * 24)));
+                        return <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '3px' }}>Auto-removes in {daysLeft}d</div>;
+                      })()}
                     </td>
                     <td className={styles.td}>
                       {showConfirm ? (
