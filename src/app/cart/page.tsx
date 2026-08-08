@@ -23,6 +23,13 @@ export default function CartPage() {
   const [form, setForm] = useState<CheckoutForm>({ name: '', email: '', phone: '', address: '', notes: '' });
   const [formError, setFormError] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [autoFill, setAutoFill] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('luxe_autofill_enabled');
+      return stored ? JSON.parse(stored) : false;
+    }
+    return false;
+  });
 
   const refreshCart = () => setCart(getCart());
 
@@ -31,6 +38,34 @@ export default function CartPage() {
     window.addEventListener('cart-updated', refreshCart);
     return () => window.removeEventListener('cart-updated', refreshCart);
   }, []);
+
+  // Update autofill values when enabled and user/profile changes
+  useEffect(() => {
+    if (autoFill && (userProfile || user)) {
+      setForm(f => ({
+        ...f,
+        name: f.name || userProfile?.displayName || user?.displayName || '',
+        email: f.email || userProfile?.email || user?.email || '',
+        phone: f.phone || userProfile?.phone || '',
+        address: f.address || (userProfile?.address ? `${userProfile.address}${userProfile.city ? ', ' + userProfile.city : ''}` : ''),
+      }));
+    } else if (!autoFill) {
+      setForm(f => ({
+        ...f,
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+      }));
+    }
+  }, [autoFill, userProfile, user]);
+
+  const handleToggleAutoFill = (checked: boolean) => {
+    setAutoFill(checked);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('luxe_autofill_enabled', JSON.stringify(checked));
+    }
+  };
 
 
 
@@ -174,6 +209,20 @@ export default function CartPage() {
             ) : (
               <div className="neumorphic-outer animate-scale-in" style={{ padding: '2rem', border: 'none' }}>
                 <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: 600 }}>Delivery Information</h2>
+                {user && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '12px 16px', borderRadius: '10px', background: 'var(--surface-hover)', border: '1px solid var(--border)', marginBottom: '1.25rem' }}>
+                    <input
+                      id="autofill-toggle"
+                      type="checkbox"
+                      checked={autoFill}
+                      onChange={e => handleToggleAutoFill(e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                    />
+                    <label htmlFor="autofill-toggle" style={{ fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', color: 'var(--text-main)' }}>
+                      Auto-fill my shipping details from profile
+                    </label>
+                  </div>
+                )}
                 <form id="checkout-form" onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   {[
                     { label: 'Full Name', key: 'name', type: 'text', placeholder: 'John Doe' },
