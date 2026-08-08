@@ -47,6 +47,29 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
           {/* Rating badge */}
           <div className={styles.ratingBadge}>★ 4.9</div>
 
+          {/* HOT ITEM badge - ONLY shown if owner enabled isHot */}
+          {product?.isHot && (
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              left: '12px',
+              background: 'linear-gradient(135deg, #ef4444, #f59e0b)',
+              color: 'white',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              padding: '4px 10px',
+              borderRadius: '20px',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+              letterSpacing: '0.5px',
+              zIndex: 3,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              🔥 HOT ITEM
+            </div>
+          )}
+
           {/* Stock badge */}
           {isOutOfStock && (
             <div className={styles.stockBadgeOut}>Sold Out</div>

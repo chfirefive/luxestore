@@ -42,6 +42,7 @@ export type Product = {
   boxImageUrl?: string;
   sizes?: string[];
   colors?: { name: string, hex: string }[];
+  isHot?: boolean;
 };
 
 export type StoreSettings = {

@@ -24,6 +24,7 @@ export default function ProductsPage() {
   const [boxImageUrl, setBoxImageUrl] = useState('');
   const [sizesStr, setSizesStr] = useState('');
   const [colorsStr, setColorsStr] = useState('');
+  const [isHot, setIsHot] = useState(false);
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -82,10 +83,11 @@ export default function ProductsPage() {
       boxImageUrl: boxImageUrl.trim(),
       sizes,
       colors,
+      isHot,
     });
 
     setProducts(prev => [newProd, ...prev]);
-    setName(''); setPrice(''); setImageUrl(''); setDescription(''); setStock('10'); setBackgroundGradient(''); setBoxImageUrl(''); setSizesStr(''); setColorsStr('');
+    setName(''); setPrice(''); setImageUrl(''); setDescription(''); setStock('10'); setBackgroundGradient(''); setBoxImageUrl(''); setSizesStr(''); setColorsStr(''); setIsHot(false);
     setSuccess(`Successfully added "${name}"!`);
     setTimeout(() => setSuccess(''), 3000);
     setSaving(false);
@@ -187,6 +189,14 @@ export default function ProductsPage() {
             </div>
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(239,68,68,0.08)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.25)' }}>
+            <input id="product-is-hot" name="product-is-hot" type="checkbox" checked={isHot} onChange={e => setIsHot(e.target.checked)}
+              style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#ef4444' }} />
+            <label htmlFor="product-is-hot" style={{ fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🔥 Mark as HOT ITEM (Only enabled products will show Hot Item badge on client store)
+            </label>
+          </div>
+
           <button type="submit" disabled={saving} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: saving ? 0.7 : 1 }}>
             <Icons.Plus /> {saving ? 'Saving...' : 'Add Product to Store'}
           </button>
@@ -253,7 +263,14 @@ export default function ProductsPage() {
                       <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.description.substring(0, 60)}...</span>
                     )}
                   </td>
-                  <td className={styles.td}><strong>{p.name}</strong></td>
+                  <td className={styles.td}>
+                    <strong>{p.name}</strong>
+                    {p.isHot && (
+                      <span style={{ marginLeft: '8px', background: 'linear-gradient(135deg, #ef4444, #f59e0b)', color: 'white', fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        🔥 HOT
+                      </span>
+                    )}
+                  </td>
                   <td className={styles.td}>{formatPrice(p.price)}</td>
                   <td className={styles.td}><span className={styles.statusReady}>{categories.find(c => c.slug === p.categorySlug)?.name || p.categorySlug}</span></td>
                   <td className={styles.td}>

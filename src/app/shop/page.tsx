@@ -228,6 +228,27 @@ export default function Shop() {
           </div>
         </section>
 
+        {/* Hot Items Section - ONLY shown if owner enabled isHot on products */}
+        {allProducts.filter(p => !p.archived && p.isHot).length > 0 && (
+          <section id="hot-items" style={{ padding: '3.5rem 0', background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+            <div className="container">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.75rem' }}>
+                <span style={{ fontSize: '2.2rem' }}>🔥</span>
+                <div>
+                  <h2 className="title" style={{ fontSize: '2rem', margin: 0 }}>Hot Items</h2>
+                  <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Trending top-rated picks curated by the store owner</p>
+                </div>
+              </div>
+
+              <div className="grid-3">
+                {allProducts.filter(p => !p.archived && p.isHot).map(p => (
+                  <ProductCard key={p.id} id={p.id} name={p.name} price={p.price} image={p.imageUrl} description={p.description} product={p} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Dynamic Flash Sale Section */}
         <section id="flash-deals" className={styles.flashSale}>
           <div className="container">

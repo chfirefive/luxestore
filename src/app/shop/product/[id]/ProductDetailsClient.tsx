@@ -80,6 +80,25 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
 
         {/* Center Top Title Block */}
         <div className={styles.headerInfo}>
+          {product.isHot && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'linear-gradient(135deg, #ef4444, #f59e0b)',
+              color: 'white',
+              padding: '4px 14px',
+              borderRadius: '20px',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              marginBottom: '8px',
+              boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase'
+            }}>
+              🔥 HOT ITEM
+            </div>
+          )}
           <h1 className={styles.productTitle}>{product.name}</h1>
           <p className={styles.productSubtitle}>{product.categorySlug}</p>
         </div>

@@ -82,14 +82,18 @@ export default function ClientsPage() {
       </div>
 
       {/* Tabs Selector */}
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', marginBottom: '2rem', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
         <button 
           onClick={() => { setActiveTab('buyers'); setSearch(''); }}
           style={{
-            background: 'none', border: 'none', padding: '10px 16px', fontSize: '1rem', fontWeight: 600,
-            color: activeTab === 'buyers' ? 'var(--primary)' : 'var(--text-muted)',
-            borderBottom: activeTab === 'buyers' ? '2px solid var(--primary)' : '2px solid transparent',
-            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s'
+            background: activeTab === 'buyers' ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--surface)',
+            color: activeTab === 'buyers' ? 'white' : 'var(--text-muted)',
+            border: '1px solid ' + (activeTab === 'buyers' ? 'transparent' : 'rgba(255,255,255,0.05)'),
+            padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s ease',
+            boxShadow: activeTab === 'buyers'
+              ? '0 6px 15px rgba(99, 102, 241, 0.45)'
+              : '4px 4px 8px rgba(0, 0, 0, 0.25), -4px -4px 8px rgba(255, 255, 255, 0.05)'
           }}
         >
           👤 Buyers Database ({clients.length})
@@ -97,10 +101,14 @@ export default function ClientsPage() {
         <button 
           onClick={() => { setActiveTab('subscribers'); setSearch(''); }}
           style={{
-            background: 'none', border: 'none', padding: '10px 16px', fontSize: '1rem', fontWeight: 600,
-            color: activeTab === 'subscribers' ? 'var(--primary)' : 'var(--text-muted)',
-            borderBottom: activeTab === 'subscribers' ? '2px solid var(--primary)' : '2px solid transparent',
-            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s'
+            background: activeTab === 'subscribers' ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--surface)',
+            color: activeTab === 'subscribers' ? 'white' : 'var(--text-muted)',
+            border: '1px solid ' + (activeTab === 'subscribers' ? 'transparent' : 'rgba(255,255,255,0.05)'),
+            padding: '10px 20px', borderRadius: '50px', fontSize: '0.9rem', fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s ease',
+            boxShadow: activeTab === 'subscribers'
+              ? '0 6px 15px rgba(99, 102, 241, 0.45)'
+              : '4px 4px 8px rgba(0, 0, 0, 0.25), -4px -4px 8px rgba(255, 255, 255, 0.05)'
           }}
         >
           ✉️ Newsletter Subscribers ({subscribers.length})

@@ -21,6 +21,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [sizesStr, setSizesStr] = useState('');
   const [colorsStr, setColorsStr] = useState('');
   const [archived, setArchived] = useState(false);
+  const [isHot, setIsHot] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setSizesStr(prod.sizes ? prod.sizes.join(', ') : '');
         setColorsStr(prod.colors ? prod.colors.map(c => `${c.name} ${c.hex}`).join(', ') : '');
         setArchived(!!prod.archived);
+        setIsHot(!!prod.isHot);
       } else {
         setError('Product not found in Firestore');
       }
@@ -78,6 +80,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         sizes,
         colors,
         archived,
+        isHot,
       });
       router.push('/owner/products');
     } catch {
@@ -184,7 +187,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-hover)', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(239,68,68,0.08)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.25)' }}>
+            <input id="product-is-hot" name="product-is-hot" type="checkbox" checked={isHot} onChange={e => setIsHot(e.target.checked)}
+              style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#ef4444' }} />
+            <label htmlFor="product-is-hot" style={{ fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🔥 Mark as HOT ITEM (Shows HOT ITEM badge on buyer store pages)
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-hover)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
             <input id="archived" name="archived" type="checkbox" checked={archived} onChange={e => setArchived(e.target.checked)}
               style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--primary)' }} />
             <label htmlFor="archived" style={{ fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer' }}>
@@ -198,8 +209,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             <button type="submit" disabled={saving} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: saving ? 0.7 : 1 }}>
               <Icons.Check /> {saving ? 'Saving to Firestore...' : 'Save Changes'}
             </button>
-            <button type="button" onClick={() => router.push('/owner/products')}
-              style={{ padding: '12px 24px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '1rem' }}>
+            <button type="button" onClick={() => router.push('/owner/products')} className="btn-secondary">
               Cancel
             </button>
           </div>

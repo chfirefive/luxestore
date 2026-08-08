@@ -239,14 +239,17 @@ export default function OwnerOrders() {
               style={{
                 background: isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--surface)',
                 color: isActive ? 'white' : 'var(--text-muted)',
-                border: '1px solid ' + (isActive ? 'transparent' : 'var(--border)'),
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontWeight: 600,
+                border: '1px solid ' + (isActive ? 'transparent' : 'rgba(255,255,255,0.05)'),
+                padding: '10px 20px',
+                borderRadius: '50px',
+                fontWeight: 700,
                 fontSize: '0.9rem',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                fontFamily: 'inherit'
+                transition: 'all 0.2s ease',
+                fontFamily: 'inherit',
+                boxShadow: isActive
+                  ? '0 6px 15px rgba(99, 102, 241, 0.45)'
+                  : '4px 4px 8px rgba(0, 0, 0, 0.25), -4px -4px 8px rgba(255, 255, 255, 0.05)'
               }}
             >
               {tab} ({count})
