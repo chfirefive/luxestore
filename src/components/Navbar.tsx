@@ -6,14 +6,18 @@ import { Icons } from '@/components/Icons';
 import { getCart } from '@/lib/firebaseDb';
 import { useAuth } from '@/context/AuthContext';
 import styles from './Navbar.module.css';
+import { useCurrency } from '@/hooks/useCurrency';
+import { ALL_CURRENCIES } from '@/lib/currency';
 
 export default function Navbar() {
   const { user, userProfile, logout } = useAuth();
+  const { currency, setCurrency } = useCurrency();
   const [buyerAuth, setBuyerAuth] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [shouldWobble, setShouldWobble] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
 
   const updateCart = () => {
     const cart = getCart();
@@ -75,6 +79,53 @@ export default function Navbar() {
 
           {/* Desktop Auth + Cart */}
           <div className={`${styles.authButtons} ${styles.desktopAuth}`}>
+
+            {/* Currency Selector Pill */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setCurrencyOpen(o => !o)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '6px 12px', borderRadius: '20px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)', color: 'var(--text-main)',
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.85rem',
+                  fontWeight: 600, whiteSpace: 'nowrap',
+                  transition: 'background 0.2s'
+                }}
+                title="Change Currency"
+                aria-label="Change currency"
+              >
+                💱 {currency.symbol} {currency.code}
+              </button>
+              {currencyOpen && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: '12px', padding: '8px 0',
+                  maxHeight: '280px', overflowY: 'auto',
+                  zIndex: 200, minWidth: '220px',
+                  boxShadow: 'var(--shadow-lg)'
+                }}>
+                  {ALL_CURRENCIES.map(c => (
+                    <button
+                      key={c.code}
+                      onClick={() => { setCurrency(c); setCurrencyOpen(false); }}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left',
+                        padding: '8px 16px', background: c.code === currency.code ? 'var(--surface-hover)' : 'none',
+                        border: 'none', cursor: 'pointer', color: 'var(--text-main)',
+                        fontFamily: 'inherit', fontSize: '0.88rem',
+                        fontWeight: c.code === currency.code ? 700 : 400
+                      }}
+                    >
+                      {c.symbol} {c.name} ({c.code})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {mounted && currentEmail ? (
               <>
                 <Link href="/shop/profile" className={styles.hiUser} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -152,6 +203,28 @@ export default function Navbar() {
         </nav>
 
         <div className={styles.drawerFooter}>
+          {/* Currency Selector in mobile drawer */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>💱 Currency</label>
+            <select
+              value={currency.code}
+              onChange={e => {
+                const c = ALL_CURRENCIES.find(c => c.code === e.target.value);
+                if (c) setCurrency(c);
+              }}
+              style={{
+                width: '100%', padding: '9px 12px', borderRadius: '10px',
+                border: '1px solid var(--border)', background: 'var(--surface)',
+                color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              {ALL_CURRENCIES.map(c => (
+                <option key={c.code} value={c.code}>{c.symbol} {c.name} ({c.code})</option>
+              ))}
+            </select>
+          </div>
+
           {mounted && currentEmail ? (
             <>
               <Link href="/shop/profile" className={styles.drawerUser} onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'block' }}>
