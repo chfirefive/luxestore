@@ -57,7 +57,7 @@ export async function sendStatusEmail({
           </tr>
           <tr>
             <td style="padding: 6px 0; color: #94a3b8; font-size: 15px; font-weight: bold;">Total Amount:</td>
-            <td style="padding: 6px 0; font-weight: bold; text-align: right; color: #6366f1; font-size: 16px;">$${total.toFixed(2)}</td>
+            <td style="padding: 6px 0; font-weight: bold; text-align: right; color: #6366f1; font-size: 16px;">Rs ${total.toLocaleString()}</td>
           </tr>
         </table>
       </div>

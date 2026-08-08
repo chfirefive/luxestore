@@ -34,7 +34,7 @@ export const COUNTRY_CURRENCY_MAP: Record<string, CurrencyConfig> = {
   RU: { code: 'RUB', symbol: '₽',    rate: 91.5,   name: 'Russian Ruble' },
 
   // South Asia
-  PK: { code: 'PKR', symbol: '₨',    rate: 278,    name: 'Pakistani Rupee' },
+  PK: { code: 'PKR', symbol: 'Rs',    rate: 278,    name: 'Pakistani Rupee' },
   IN: { code: 'INR', symbol: '₹',    rate: 83.5,   name: 'Indian Rupee' },
   BD: { code: 'BDT', symbol: '৳',    rate: 110,    name: 'Bangladeshi Taka' },
   LK: { code: 'LKR', symbol: 'Rs',   rate: 300,    name: 'Sri Lankan Rupee' },
@@ -71,8 +71,8 @@ export const COUNTRY_CURRENCY_MAP: Record<string, CurrencyConfig> = {
   MA: { code: 'MAD', symbol: 'MAD',  rate: 10.1,   name: 'Moroccan Dirham' },
 };
 
-// Default fallback
-export const DEFAULT_CURRENCY: CurrencyConfig = COUNTRY_CURRENCY_MAP['US'];
+// Default fallback — Pakistani Rupee
+export const DEFAULT_CURRENCY: CurrencyConfig = COUNTRY_CURRENCY_MAP['PK'];
 
 // All available currencies (deduplicated) for manual selector
 export const ALL_CURRENCIES: CurrencyConfig[] = Array.from(
@@ -84,9 +84,20 @@ export const ALL_CURRENCIES: CurrencyConfig[] = Array.from(
 /**
  * Convert a USD price to the target currency and return formatted string
  */
-export function formatPrice(usdPrice: number, currency: CurrencyConfig): string {
-  const converted = usdPrice * currency.rate;
-  // For currencies with large values use 0 decimal places, else 2
+/**
+ * Convert a price from the system's base currency (owner's set currency) to the target currency and return formatted string
+ */
+export const BASE_CURRENCY: CurrencyConfig = DEFAULT_CURRENCY;
+export function formatPrice(basePrice: number, targetCurrency: CurrencyConfig = BASE_CURRENCY): string {
+  // If target is the same as base, just format directly
+  if (targetCurrency.code === BASE_CURRENCY.code) {
+    const decimals = basePrice >= 100 ? 0 : 2;
+    return `${targetCurrency.symbol}${basePrice.toFixed(decimals)}`;
+  }
+  // Convert via USD rates: basePrice is in base currency units
+  // Convert base price to USD first, then to target currency
+  const priceInUSD = basePrice / BASE_CURRENCY.rate; // baseRate is relative to USD
+  const converted = priceInUSD * targetCurrency.rate;
   const decimals = converted >= 100 ? 0 : 2;
-  return `${currency.symbol}${converted.toFixed(decimals)}`;
+  return `${targetCurrency.symbol}${converted.toFixed(decimals)}`;
 }

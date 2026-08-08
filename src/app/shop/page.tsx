@@ -10,6 +10,8 @@ import CategoryRow from '@/components/CategoryRow';
 import { listenToProductsLimited, Product, listenToSettings, StoreSettings, listenToCategories, Category, listenToTrustBadges, subscribeToNewsletter, TrustBadge } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './page.module.css';
+import { useCurrency } from '@/hooks/useCurrency';
+import { ALL_CURRENCIES } from '@/lib/currency';
 
 export default function Shop() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -34,8 +36,9 @@ export default function Shop() {
 
   // Loading State
   const [loading, setLoading] = useState(true);
-  const [displayedCount, setDisplayedCount] = useState(12); // batch size
+  const [displayedCount, setDisplayedCount] = useState(12);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const { currency, setCurrency, formatPrice } = useCurrency();
 
   useEffect(() => {
     // Set up real-time subscriptions
@@ -166,6 +169,58 @@ export default function Shop() {
           </div>
         </section>
 
+        {/* Currency Selector Banner */}
+        <section style={{
+          background: 'var(--surface)',
+          borderBottom: '1px solid var(--border)',
+          padding: '0.85rem 0'
+        }}>
+          <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
+              💱 Viewing prices in:
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{
+                background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                fontWeight: 800, fontSize: '1.05rem'
+              }}>
+                {currency.symbol} {currency.name} ({currency.code})
+              </span>
+              <select
+                id="home-currency-select"
+                value={currency.code}
+                onChange={e => {
+                  const c = ALL_CURRENCIES.find(c => c.code === e.target.value);
+                  if (c) setCurrency(c);
+                }}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '20px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--background)',
+                  color: 'var(--text-main)',
+                  fontFamily: 'inherit',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+                aria-label="Select display currency"
+              >
+                {ALL_CURRENCIES.map(c => (
+                  <option key={c.code} value={c.code}>
+                    {c.symbol} {c.name} ({c.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              — All prices update across every page automatically
+            </span>
+          </div>
+        </section>
+
         {/* Dynamic Horizontal Categories */}
         <section className={styles.categorySection}>
           <div className="container">
@@ -223,10 +278,10 @@ export default function Shop() {
                         <h3 style={{ fontSize: '1.1rem', marginBottom: '0.4rem', fontWeight: 600 }}>{item.name}</h3>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                           <span style={{ color: 'var(--secondary)', fontSize: '1.35rem', fontWeight: 700 }}>
-                            ${item.discountPrice.toFixed(2)}
+                            {formatPrice(item.discountPrice)}
                           </span>
                           <span style={{ color: 'var(--text-muted)', fontSize: '0.95rem', textDecoration: 'line-through' }}>
-                            ${item.price.toFixed(2)}
+                            {formatPrice(item.price)}
                           </span>
                         </div>
                       </div>

@@ -473,7 +473,7 @@ export async function sendStatusEmail(email: string, clientName: string, orderId
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #94a3b8; font-size: 15px; font-weight: bold;">Total Amount:</td>
-              <td style="padding: 6px 0; font-weight: bold; text-align: right; color: #6366f1; font-size: 16px;">$${total.toFixed(2)}</td>
+              <td style="padding: 6px 0; font-weight: bold; text-align: right; color: #6366f1; font-size: 16px;">Rs ${total.toLocaleString()}</td>
             </tr>
           </table>
         </div>
@@ -649,7 +649,7 @@ export async function addClient(client: Omit<Client, 'id'>) {
 // ─── TRUST BADGES ────────────────────────────────────────────────────────────
 
 const DEFAULT_BADGES: TrustBadge[] = [
-  { id: 'delivery', title: 'Free Delivery', desc: 'Free worldwide delivery on orders over $150', active: true },
+  { id: 'delivery', title: 'Free Delivery', desc: 'Free worldwide delivery on orders over Rs 15,000', active: true },
   { id: 'returns', title: 'Easy Returns', desc: '30-day money back guarantee, no questions asked', active: true },
   { id: 'secure', title: 'Secure Payment', desc: 'Fully encrypted secure payment gateways', active: true },
   { id: 'helpline', title: '24/7 Helpline', desc: 'Continuous round-the-clock support for query answers', active: true },

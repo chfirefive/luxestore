@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Icons } from '@/components/Icons';
+import { formatPrice } from '@/lib/currency';
 import { listenToOrders, cleanupExpiredOrders, Order } from '@/lib/firebaseDb';
 import styles from './Orders.module.css';
 
@@ -93,7 +94,7 @@ export default function OwnerOrders() {
       ...orders.map(o => [
         o.id, o.client, o.email, o.phone, o.address,
         o.items.map(i => `${i.name}x${i.qty}`).join('; '),
-        `$${o.total.toFixed(2)}`, o.date, o.status,
+        formatPrice(o.total), o.date, o.status,
       ]),
     ];
     const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -178,7 +179,7 @@ export default function OwnerOrders() {
           { label: 'Total Orders', value: orders.length, color: 'var(--primary)' },
           { label: 'Pending', value: pendingCount, color: '#f59e0b' },
           { label: 'Cancelled', value: cancelledCount, color: '#ef4444' },
-          { label: 'Revenue (Ready)', value: `$${totalRevenue.toFixed(2)}`, color: '#10b981' },
+          { label: 'Revenue (Ready)', value: formatPrice(totalRevenue), color: '#10b981' },
         ].map(stat => (
           <div key={stat.label} className="card" style={{ padding: '1.5rem', background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem', fontWeight: 500 }}>{stat.label}</p>
@@ -198,7 +199,7 @@ export default function OwnerOrders() {
                 <div style={{ position: 'relative', width: '32px', height: '120px', display: 'flex', alignItems: 'flex-end' }}>
                   {/* Tooltip on hover */}
                   <div className={styles.chartTooltip} style={{ position: 'absolute', bottom: `${pct + 8}%`, left: '50%', transform: 'translateX(-50%)', background: 'var(--primary)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap', opacity: 0, pointerEvents: 'none', transition: 'opacity 0.2s, transform 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
-                    ${stat.totalSales.toFixed(2)} ({stat.count} ord)
+                    {formatPrice(stat.totalSales)} ({stat.count} ord)
                   </div>
                   <div
                     style={{
@@ -298,7 +299,7 @@ export default function OwnerOrders() {
                     <td className={styles.td}>
                       <div style={{ fontSize: '0.85rem' }}>{order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
                     </td>
-                    <td className={styles.td}><strong>${order.total.toFixed(2)}</strong></td>
+                    <td className={styles.td}><strong>{formatPrice(order.total)}</strong></td>
                     <td className={styles.td}>
                       {order.notes ? (
                         <span title={order.notes} style={{ display: 'block', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#f59e0b', fontStyle: 'italic', fontSize: '0.85rem', cursor: 'help' }}>
