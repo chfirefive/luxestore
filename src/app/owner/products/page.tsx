@@ -165,8 +165,8 @@ export default function ProductsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label htmlFor="product-description" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Description Details</label>
-              <input id="product-description" name="product-description" type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Enter details about this product..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
+              <label htmlFor="product-description" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Item Description Details</label>
+              <textarea id="product-description" name="product-description" rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Write detailed description of this item (materials, features, story)..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', resize: 'vertical' }} />
             </div>
           </div>
 

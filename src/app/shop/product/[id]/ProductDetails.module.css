@@ -129,7 +129,35 @@
   transform: rotate(-12deg);
 }
 
-/* Left Column Overlay: Sizes */
+/* 3D Fallback Animated Container */
+.fallback3DContainer {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.ambientGlow {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  filter: blur(45px);
+  opacity: 0.35;
+  z-index: 1;
+}
+
+.fallback3DSvg {
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  position: relative;
+}
+
+/* Left Column Overlay: Info + Sizes */
 .leftOverlay {
   position: absolute;
   left: 0;
@@ -139,6 +167,23 @@
   flex-direction: column;
   align-items: center;
   z-index: 5;
+}
+
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.infoBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--primary);
 }
 
 /* Right Column Overlay: Fav + Colors */
@@ -254,16 +299,20 @@
   font-weight: 600;
 }
 
-.swipeContainer {
+/* 3D Animated Swipe Bar & Thumb */
+.swipeContainer3D {
   position: relative;
-  width: 210px;
-  height: 56px;
-  border-radius: 28px;
+  width: 220px;
+  height: 58px;
+  border-radius: 30px;
   background: var(--surface);
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.4), 
+              inset -4px -4px 8px rgba(255, 255, 255, 0.05),
+              0 8px 20px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   padding: 0 6px;
-  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .swipeText {
@@ -276,17 +325,45 @@
   color: var(--text-muted);
 }
 
-.swipeThumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 22px;
+.swipeThumb3D {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--surface), var(--surface-hover));
+  box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.4), 
+             -4px -4px 10px rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
   z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
 }
 
-.swipeThumb:active {
+.swipeThumb3D:active {
   cursor: grabbing;
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Modal Popup Backdrop & Dialog */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.descModal {
+  max-width: 460px;
+  width: 100%;
+  padding: 2rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
