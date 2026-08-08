@@ -2,21 +2,29 @@
   display: flex;
   min-height: 100vh;
   background: var(--background);
+  position: relative;
+}
+
+.mobileHeader {
+  display: none;
 }
 
 .sidebar {
-  width: 280px;
+  width: 260px;
   background: var(--surface);
   border-right: 1px solid var(--border);
-  padding: 2rem;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  z-index: 100;
 }
 
 .sidebarHeader {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -73,6 +81,68 @@
 
 .mainContent {
   flex: 1;
-  padding: 3rem;
+  padding: 2.5rem;
   overflow-y: auto;
+  max-width: 100%;
+}
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .ownerContainer {
+    flex-direction: column;
+  }
+
+  .mobileHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 101;
+  }
+
+  .mobileMenuToggle {
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 61px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 61px);
+    background: var(--background);
+    border-right: none;
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    padding: 1.5rem;
+  }
+
+  .sidebar.mobileOpen {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar .sidebarHeader {
+    display: none;
+  }
+
+  .mainContent {
+    padding: 1.25rem 1rem;
+  }
 }

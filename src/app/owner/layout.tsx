@@ -10,6 +10,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [checked, setChecked] = useState(false);
   const [authed, setAuthed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const auth = sessionStorage.getItem('owner_auth');
@@ -38,28 +39,43 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className={styles.ownerContainer}>
-      <aside className={styles.sidebar}>
+      {/* Mobile Top Navigation Bar */}
+      <div className={styles.mobileHeader}>
+        <div className={styles.sidebarHeader} style={{ margin: 0 }}>
+          <div style={{ color: 'white' }}><Icons.Store /></div>
+          LuxeStore Owner
+        </div>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className={styles.mobileMenuToggle}
+          aria-label="Toggle owner menu"
+        >
+          {mobileMenuOpen ? '✕' : '☰'} Menu
+        </button>
+      </div>
+
+      <aside className={`${styles.sidebar} ${mobileMenuOpen ? styles.mobileOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <div style={{ color: 'white' }}><Icons.Store /></div>
-          LuxeStore
+          LuxeStore Owner
         </div>
         <nav className={styles.navLinks}>
-          <Link href="/owner" className={styles.link}>
+          <Link href="/owner" className={styles.link} onClick={() => setMobileMenuOpen(false)}>
             <Icons.Orders /> Orders
           </Link>
-          <Link href="/owner/products" className={styles.link}>
+          <Link href="/owner/products" className={styles.link} onClick={() => setMobileMenuOpen(false)}>
             <Icons.Plus /> Add Goods
           </Link>
-          <Link href="/owner/clients" className={styles.link}>
+          <Link href="/owner/clients" className={styles.link} onClick={() => setMobileMenuOpen(false)}>
             <Icons.Clients /> Clients & Reports
           </Link>
-          <Link href="/owner/settings" className={styles.link}>
+          <Link href="/owner/settings" className={styles.link} onClick={() => setMobileMenuOpen(false)}>
             <Icons.Settings /> Site Settings
           </Link>
-          <Link href="/owner/menus" className={styles.link}>
+          <Link href="/owner/menus" className={styles.link} onClick={() => setMobileMenuOpen(false)}>
             <Icons.Menu /> Menu Management
           </Link>
-          <Link href="/owner/password" className={styles.link}>
+          <Link href="/owner/password" className={styles.link} onClick={() => setMobileMenuOpen(false)}>
             <Icons.Lock /> Password
           </Link>
           <button onClick={handleLogout} className={styles.logoutBtn}>
@@ -67,6 +83,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
           </button>
         </nav>
       </aside>
+
       <main className={styles.mainContent}>
         {children}
       </main>

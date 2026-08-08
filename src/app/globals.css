@@ -141,9 +141,16 @@ body {
 /* Layout */
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   justify-content: center;
   gap: 24px;
+}
+
+@media (max-width: 640px) {
+  .grid-3 {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
 }
 
 /* --- PREMIUM MICRO-ANIMATIONS --- */

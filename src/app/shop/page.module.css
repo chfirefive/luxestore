@@ -149,9 +149,16 @@
 
 .flashGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   justify-content: center;
   gap: 24px;
+}
+
+@media (max-width: 640px) {
+  .flashGrid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
 }
 
 .progressContainer {
