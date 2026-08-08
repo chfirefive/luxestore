@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Icons } from '@/components/Icons';
+import { formatPrice } from '@/lib/currency';
 import {
   listenToCategories, Category,
   listenToProducts, addProduct, updateProduct, deleteProduct, Product
@@ -123,7 +124,7 @@ export default function ProductsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label htmlFor="product-price" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Price ($)</label>
+              <label htmlFor="product-price" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Price (Rs)</label>
               <input id="product-price" name="product-price" type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} required placeholder="e.g. 199.99" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
             </div>
 
@@ -253,7 +254,7 @@ export default function ProductsPage() {
                     )}
                   </td>
                   <td className={styles.td}><strong>{p.name}</strong></td>
-                  <td className={styles.td}>${p.price.toFixed(2)}</td>
+                  <td className={styles.td}>{formatPrice(p.price)}</td>
                   <td className={styles.td}><span className={styles.statusReady}>{categories.find(c => c.slug === p.categorySlug)?.name || p.categorySlug}</span></td>
                   <td className={styles.td}>
                     {p.stock <= 0 ? (

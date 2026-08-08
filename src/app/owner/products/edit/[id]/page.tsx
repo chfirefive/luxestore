@@ -120,7 +120,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label htmlFor="product-price" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Price ($)</label>
+              <label htmlFor="product-price" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Price (Rs)</label>
               <input id="product-price" name="product-price" type="number" step="0.01" value={price} onChange={e => setPrice(e.target.value)} required placeholder="e.g. 199.99"
                 style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '1rem' }} />
             </div>
