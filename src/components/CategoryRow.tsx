@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { listenToCategories, Category } from '@/lib/firebaseDb';
 
-/* ─── Inline styles scoped to this component ─── */
+/* ─── Inline styles ─── */
 const css = `
+  /* ── strip wrapper ── */
   .cr-card {
     max-width: 100%;
     border-radius: 15px;
@@ -20,20 +21,21 @@ const css = `
       inset 0 0 20px rgba(255,255,255,0.08),
       inset 0 0 5px  rgba(255,255,255,0.12),
       0 5px 5px rgba(0,0,0,0.18);
-    transition: background 0.5s;
-    overflow-x: auto;
+    transition: background 0.5s, height 0.4s ease;
+    overflow: hidden;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     background: var(--glass-bg, rgba(255,255,255,0.04));
     border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
     margin: 1.5rem 0;
+    position: relative;
   }
 
   .cr-card::-webkit-scrollbar { display: none; }
-
   .cr-card:hover { background: rgba(173,173,173,0.06); }
 
-  .cr-card ul {
+  /* ── buttons list ── */
+  .cr-ul {
     padding: 0.75rem 1.5rem;
     display: flex;
     list-style: none;
@@ -45,9 +47,18 @@ const css = `
     margin: 0 auto;
     width: max-content;
     max-width: 100%;
+    transition: opacity 0.35s ease, transform 0.5s cubic-bezier(.68,-0.55,.27,1.55);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .cr-ul::-webkit-scrollbar { display: none; }
 
-  .cr-card ul li { cursor: pointer; flex-shrink: 0; }
+  /* roll-away: buttons slide right as a "ball" and fade */
+  .cr-ul.cr-rolled {
+    opacity: 0;
+    transform: translateX(120%) scale(0.3);
+    pointer-events: none;
+  }
 
   /* ── svg circle button ── */
   .cr-svg {
@@ -99,10 +110,7 @@ const css = `
     align-items: center;
   }
 
-  .cr-iso:hover .cr-svg {
-    transform: translate(5px, -5px);
-  }
-
+  .cr-iso:hover .cr-svg { transform: translate(5px, -5px); }
   .cr-iso:hover .cr-text {
     opacity: 1;
     transform: translate(25px, -2px) skew(-5deg);
@@ -139,10 +147,114 @@ const css = `
       0 5px 12px rgba(0,0,0,0.22);
   }
 
-  /* ── "All" emoji icon ── */
-  .cr-emoji {
-    font-size: 1.4rem;
-    line-height: 1;
+  .cr-emoji { font-size: 1.4rem; line-height: 1; }
+
+  /* ── search button on the strip ── */
+  .cr-search-btn {
+    flex-shrink: 0;
+    height: 60px;
+    width: 60px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary, #6366f1), var(--secondary, #ec4899));
+    box-shadow: 0 0 18px rgba(99,102,241,0.4), 0 5px 12px rgba(0,0,0,0.22);
+    color: white;
+    transition: transform 0.3s, box-shadow 0.3s;
+    animation: cr-pulse 2.4s infinite;
+  }
+
+  .cr-search-btn:hover {
+    transform: scale(1.12) translate(2px, -3px);
+    box-shadow: 0 0 30px rgba(99,102,241,0.6), 0 8px 18px rgba(0,0,0,0.28);
+  }
+
+  @keyframes cr-pulse {
+    0%,100% { box-shadow: 0 0 18px rgba(99,102,241,0.4), 0 5px 12px rgba(0,0,0,0.22); }
+    50%      { box-shadow: 0 0 30px rgba(236,72,153,0.55), 0 5px 16px rgba(0,0,0,0.28); }
+  }
+
+  /* ── expanded inline search bar ── */
+  .cr-searchbar-wrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    gap: 10px;
+    opacity: 0;
+    transform: scale(0.6) translateX(-40px);
+    pointer-events: none;
+    transition: opacity 0.4s ease 0.15s, transform 0.45s cubic-bezier(.22,1,.36,1) 0.1s;
+  }
+
+  .cr-searchbar-wrap.cr-sb-visible {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+    pointer-events: all;
+  }
+
+  .cr-searchbar-input {
+    flex: 1;
+    max-width: 560px;
+    height: 48px;
+    border-radius: 30px;
+    border: 2px solid transparent;
+    background: var(--surface, rgba(255,255,255,0.08));
+    color: var(--text-main);
+    padding: 0 1.2rem 0 3rem;
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    box-shadow:
+      inset 0 0 16px rgba(255,255,255,0.06),
+      0 4px 14px rgba(0,0,0,0.18);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .cr-searchbar-input:focus {
+    border-color: var(--primary, #6366f1);
+    box-shadow:
+      inset 0 0 16px rgba(255,255,255,0.06),
+      0 0 0 3px rgba(99,102,241,0.18),
+      0 4px 14px rgba(0,0,0,0.18);
+  }
+
+  .cr-searchbar-input::placeholder { color: var(--text-muted); }
+
+  .cr-sb-icon {
+    position: absolute;
+    left: calc(50% - 270px);
+    color: var(--text-muted);
+    display: flex;
+    pointer-events: none;
+  }
+
+  .cr-sb-close {
+    flex-shrink: 0;
+    height: 44px;
+    width: 44px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface, rgba(255,255,255,0.08));
+    color: var(--text-muted);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+    font-size: 1.2rem;
+  }
+
+  .cr-sb-close:hover {
+    background: rgba(239,68,68,0.18);
+    color: #ef4444;
+    transform: rotate(90deg);
   }
 `;
 
@@ -229,8 +341,18 @@ function CategoryIcon({ name }: { name: string }) {
   );
 }
 
-export default function CategoryRow() {
+/* ─────────────────────────────────────────────────────────── */
+
+interface Props {
+  /** Called whenever the inline ribbon search term changes */
+  onSearch?: (query: string) => void;
+}
+
+export default function CategoryRow({ onSearch }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [ribbonQuery, setRibbonQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -240,14 +362,40 @@ export default function CategoryRow() {
     return () => unsub();
   }, []);
 
+  /* Open search bar */
+  const openSearch = () => {
+    setSearchOpen(true);
+    // focus after animation
+    setTimeout(() => inputRef.current?.focus(), 350);
+  };
+
+  /* Close search bar and clear */
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setRibbonQuery('');
+    onSearch?.('');
+  };
+
+  /* Handle typing */
+  const handleRibbonInput = useCallback((val: string) => {
+    setRibbonQuery(val);
+    onSearch?.(val);
+  }, [onSearch]);
+
   if (categories.length === 0) return null;
 
   return (
     <>
       <style>{css}</style>
 
-      <div className="cr-card" role="navigation" aria-label="Browse product categories">
-        <ul>
+      <div
+        className="cr-card"
+        role="navigation"
+        aria-label="Browse product categories"
+        style={{ minHeight: '90px' }}
+      >
+        {/* ── category buttons (roll away when search opens) ── */}
+        <ul className={`cr-ul${searchOpen ? ' cr-rolled' : ''}`}>
           {/* "All" button */}
           <li>
             <div
@@ -258,12 +406,8 @@ export default function CategoryRow() {
               aria-label="All categories"
               onKeyDown={e => e.key === 'Enter' && router.push('/shop')}
             >
-              <span />
-              <span />
-              <span />
-              <div className="cr-svg">
-                <span className="cr-emoji">🏪</span>
-              </div>
+              <span /><span /><span />
+              <div className="cr-svg"><span className="cr-emoji">🏪</span></div>
               <div className="cr-text">All</div>
             </div>
           </li>
@@ -278,17 +422,59 @@ export default function CategoryRow() {
                 aria-label={cat.name}
                 onKeyDown={e => e.key === 'Enter' && router.push(`/shop/category/${cat.slug}`)}
               >
-                <span />
-                <span />
-                <span />
-                <div className="cr-svg">
-                  <CategoryIcon name={cat.name} />
-                </div>
+                <span /><span /><span />
+                <div className="cr-svg"><CategoryIcon name={cat.name} /></div>
                 <div className="cr-text">{cat.name}</div>
               </div>
             </li>
           ))}
+
+          {/* ── Search button – always last in list ── */}
+          <li>
+            <button
+              className="cr-search-btn"
+              onClick={openSearch}
+              aria-label="Open search"
+              title="Search products"
+            >
+              {/* magnifier icon */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+          </li>
         </ul>
+
+        {/* ── inline search bar (slides in when search opens) ── */}
+        <div className={`cr-searchbar-wrap${searchOpen ? ' cr-sb-visible' : ''}`} aria-hidden={!searchOpen}>
+          {/* magnifier icon inside input */}
+          <span className="cr-sb-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
+
+          <input
+            ref={inputRef}
+            type="text"
+            className="cr-searchbar-input"
+            placeholder="Search phones, shoes, skincare…"
+            value={ribbonQuery}
+            onChange={e => handleRibbonInput(e.target.value)}
+            onKeyDown={e => e.key === 'Escape' && closeSearch()}
+            aria-label="Search products"
+          />
+
+          {/* close × button */}
+          <button
+            className="cr-sb-close"
+            onClick={closeSearch}
+            aria-label="Close search"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
       </div>
     </>
   );

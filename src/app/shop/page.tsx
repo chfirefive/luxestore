@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import ProductCard from '@/components/ProductCard';
 import AddToCartButton from '@/components/AddToCartButton';
 import CategoryRow from '@/components/CategoryRow';
+import SwipeRow from '@/components/SwipeRow';
 import { listenToProductsLimited, Product, listenToSettings, StoreSettings, listenToCategories, Category, listenToTrustBadges, subscribeToNewsletter, TrustBadge } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './page.module.css';
@@ -134,6 +135,28 @@ function ShopContent() {
     return 0; // default
   });
 
+  // ── Group products by category for horizontal swipeable rows ──────────
+  // Only used when no filter/search is active (show full browse experience)
+  const isFiltered = !!(search.trim() || category !== 'all' || minPrice || maxPrice || sort !== 'default');
+  const categoryRows: { slug: string; name: string; products: typeof sortedProducts }[] = [];
+  if (!isFiltered) {
+    const seen = new Map<string, typeof sortedProducts>();
+    for (const p of allProducts.filter(p => !p.archived)) {
+      const slug = p.categorySlug || '__uncategorised';
+      if (!seen.has(slug)) seen.set(slug, []);
+      seen.get(slug)!.push(p);
+    }
+    for (const cat of categories) {
+      if (seen.has(cat.slug) && seen.get(cat.slug)!.length > 0) {
+        categoryRows.push({ slug: cat.slug, name: cat.name, products: seen.get(cat.slug)! });
+      }
+    }
+    // Uncategorised fallback
+    if (seen.has('__uncategorised') && seen.get('__uncategorised')!.length > 0) {
+      categoryRows.push({ slug: '__uncategorised', name: 'Other Products', products: seen.get('__uncategorised')! });
+    }
+  }
+
   // Mock Flash Sale Products (pick first 2 products for mockup)
   const flashSaleItems = allProducts.filter(p => !p.archived).slice(0, 3).map((p, idx) => ({
     ...p,
@@ -242,7 +265,7 @@ function ShopContent() {
         {/* Dynamic Horizontal Categories */}
         <section className={styles.categorySection}>
           <div className="container">
-            <CategoryRow />
+            <CategoryRow onSearch={q => setSearch(q)} />
           </div>
         </section>
 
@@ -478,46 +501,62 @@ function ShopContent() {
               </div>
             )}
 
-            {/* Products Grid */}
+            {/* ── Products: swipeable rows by category (browse) or flat grid (filtered) ── */}
             {loading ? (
               <div className="grid-3">
                 {[...Array(displayedCount)].map((_, i) => (
                   <SkeletonCard key={i} />
                 ))}
               </div>
-            ) : sortedProducts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '1rem' }}>No products match your active search filter settings.</p>
-                <button onClick={handleClearFilters} className="btn-primary" style={{ padding: '10px 20px' }}>Show All Products</button>
-              </div>
-            ) : (
-              <>
-                <div className="grid-3">
-                  {sortedProducts.slice(0, displayedCount).map(item => (
-                    <ProductCard
-                      key={`catalog-${item.id}`}
-                      id={item.id}
-                      name={item.name}
-                      price={item.price}
-                      image={item.imageUrl}
-                      description={item.description}
-                      comments={Math.floor(Math.random() * 40)}
-                      product={item}
-                    />
-                  ))}
-                  <div ref={sentinelRef} />
+            ) : isFiltered ? (
+              /* ── Filtered flat grid ─────────────────────────────── */
+              sortedProducts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '1rem' }}>No products match your active search filter settings.</p>
+                  <button onClick={handleClearFilters} className="btn-primary" style={{ padding: '10px 20px' }}>Show All Products</button>
                 </div>
-                {sortedProducts.length > displayedCount && (
-                  <button
-                    className={`${styles.loadMoreBtn} neumorphic-btn`}
-                    style={{ border: 'none' }}
-                    onClick={() => setDisplayedCount(c => c + 12)}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    Load More Products
-                  </button>
-                )}
-              </>
+              ) : (
+                <>
+                  <div className="grid-3">
+                    {sortedProducts.slice(0, displayedCount).map(item => (
+                      <ProductCard
+                        key={`catalog-${item.id}`}
+                        id={item.id}
+                        name={item.name}
+                        price={item.price}
+                        image={item.imageUrl}
+                        description={item.description}
+                        comments={Math.floor(Math.random() * 40)}
+                        product={item}
+                      />
+                    ))}
+                    <div ref={sentinelRef} />
+                  </div>
+                  {sortedProducts.length > displayedCount && (
+                    <button
+                      className={`${styles.loadMoreBtn} neumorphic-btn`}
+                      style={{ border: 'none' }}
+                      onClick={() => setDisplayedCount(c => c + 12)}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      Load More Products
+                    </button>
+                  )}
+                </>
+              )
+            ) : (
+              /* ── Browse mode: horizontal swipeable rows per category ── */
+              categoryRows.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }}>No products yet. Check back soon!</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                  {categoryRows.map(row => (
+                    <SwipeRow key={row.slug} title={row.name} products={row.products} formatPrice={formatPrice} />
+                  ))}
+                </div>
+              )
             )}
           </div>
         </section>
