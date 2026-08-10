@@ -70,6 +70,17 @@ const jsonLdData = {
       'name': 'LuxeStorePay',
       'alternateName': ['LuxeStore', 'Luxe Store Pay', 'LuxeStore Pay', 'Luxe'],
       'description': 'Premium online store for luxury goods, electronics, and fashion.',
+      // ── Sitelinks Searchbox ──────────────────────────────────────────────
+      // Tells Google to show a search box under the site in search results.
+      // Replace search_term_string in the URL template with your actual search param.
+      'potentialAction': {
+        '@type': 'SearchAction',
+        'target': {
+          '@type': 'EntryPoint',
+          'urlTemplate': `${siteUrl}/shop?q={search_term_string}`,
+        },
+        'query-input': 'required name=search_term_string',
+      },
     },
     {
       '@type': 'Organization',
@@ -78,6 +89,7 @@ const jsonLdData = {
       'alternateName': ['LuxeStore', 'LuxeStore Pay'],
       'url': siteUrl,
       'logo': `${siteUrl}/favicon.ico`,
+      'sameAs': [],
     },
   ],
 };

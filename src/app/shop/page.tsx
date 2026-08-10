@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import SkeletonCard from '@/components/SkeletonCard';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -12,15 +13,18 @@ import { Icons } from '@/components/Icons';
 import styles from './page.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ALL_CURRENCIES } from '@/lib/currency';
+import { expandQuery, getRelatedTerms } from '@/lib/searchRelations';
 
-export default function Shop() {
+function ShopContent() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [badges, setBadges] = useState<TrustBadge[]>([]);
 
-  // Search & Filter State
-  const [search, setSearch] = useState('');
+  const searchParams = useSearchParams();
+
+  // Search & Filter State — pre-fill from ?q= param (Google Sitelinks Searchbox)
+  const [search, setSearch] = useState(() => searchParams.get('q') || '');
   const [category, setCategory] = useState('all');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -83,17 +87,31 @@ export default function Shop() {
     return () => clearInterval(timer);
   }, []);
 
+  // ── Smart Semantic Search ──────────────────────────────────────────────
+  // Expand the raw query into related terms (phone → charger, cable, etc.)
+  const expandedTerms = search.trim() ? expandQuery(search.trim()) : [];
+  const relatedTerms  = search.trim() ? getRelatedTerms(search.trim()) : [];
+  const hasRelated    = relatedTerms.length > 0;
+
   // Filtering & Sorting Logic
   const filteredProducts = allProducts.filter(p => {
     // Hide archived
     if (p.archived) return false;
 
-    // Search query match
+    // Smart search: match original query OR any expanded related term
     if (search.trim()) {
-      const q = search.toLowerCase();
-      const matchName = p.name.toLowerCase().includes(q);
-      const matchDesc = p.description.toLowerCase().includes(q);
-      if (!matchName && !matchDesc) return false;
+      const nameL = p.name.toLowerCase();
+      const descL = p.description.toLowerCase();
+      const catL  = (p.categorySlug || '').toLowerCase();
+      const combined = `${nameL} ${descL} ${catL}`;
+
+      // First try exact query match (higher precision)
+      const exactMatch = combined.includes(search.toLowerCase());
+
+      // Then try any expanded/related term match
+      const relatedMatch = expandedTerms.some(term => combined.includes(term));
+
+      if (!exactMatch && !relatedMatch) return false;
     }
 
     // Category match
@@ -344,7 +362,7 @@ export default function Shop() {
                     name="shop-search"
                     type="text"
                     aria-label="Search items"
-                    placeholder="Search items by name or description..."
+                    placeholder="Search items, e.g. phone, shoes, skincare..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     className={`${styles.filterInput} neumorphic-inner`}
@@ -422,6 +440,43 @@ export default function Shop() {
                 )}
               </div>
             </div>
+
+            {/* Related-terms badge — shows when semantic expansion is active */}
+            {search.trim() && hasRelated && filteredProducts.length > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px',
+                marginBottom: '1.25rem', padding: '10px 16px',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(236,72,153,0.08))',
+                border: '1px solid rgba(99,102,241,0.2)',
+                borderRadius: '10px', fontSize: '0.83rem',
+              }}>
+                <span style={{ color: 'var(--primary)', fontWeight: 700 }}>🔍 Also showing related items for:</span>
+                {relatedTerms.slice(0, 8).map(t => (
+                  <span
+                    key={t}
+                    onClick={() => setSearch(t)}
+                    style={{
+                      cursor: 'pointer', padding: '3px 10px',
+                      background: 'var(--glass-bg)', border: '1px solid var(--border)',
+                      borderRadius: '20px', color: 'var(--text-muted)',
+                      transition: 'all 0.2s', fontWeight: 500,
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.background = 'var(--primary)';
+                      (e.currentTarget as HTMLElement).style.color = 'white';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'transparent';
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.background = 'var(--glass-bg)';
+                      (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+                    }}
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Products Grid */}
             {loading ? (
@@ -591,3 +646,12 @@ export default function Shop() {
     </>
   );
 }
+
+export default function Shop() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading…</div>}>
+      <ShopContent />
+    </Suspense>
+  );
+}
+
