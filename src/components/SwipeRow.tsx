@@ -113,15 +113,18 @@ const css = `
     flex: 0 0 calc(20% - 1rem); /* 5 items visible on desktop */
     min-width: 210px;
     max-width: 260px;
+    height: 350px;
+    max-height: 350px;
     scroll-snap-align: start;
     border-radius: 16px;
     background: var(--surface, rgba(255,255,255,0.04));
     border: 1px solid var(--border, rgba(255,255,255,0.08));
-    overflow: hidden;
+    overflow: hidden !important;
     transition: transform 0.28s ease, box-shadow 0.28s ease;
     box-shadow: 0 4px 18px rgba(0,0,0,0.14);
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     position: relative;
   }
   .sr-card:hover {
@@ -151,14 +154,19 @@ const css = `
   .sr-card-img-wrap {
     position: relative;
     width: 100%;
-    height: 190px;
-    overflow: hidden;
+    height: 170px;
+    max-height: 170px;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    background: var(--surface-hover, rgba(255,255,255,0.06));
   }
 
   .sr-card-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: cover !important;
     display: block;
     border-radius: 16px 16px 0 0;
     transition: transform 0.4s ease;
@@ -200,21 +208,24 @@ const css = `
   }
 
   .sr-card-body {
-    padding: 0.9rem 1rem;
+    padding: 0.75rem 1rem 0.4rem;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    justify-content: space-between;
+    overflow: hidden !important;
   }
 
   .sr-card-name {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 600;
     color: var(--text-main);
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
+    line-height: 1.35;
+    max-height: 2.7em;
   }
 
   .sr-card-price {
