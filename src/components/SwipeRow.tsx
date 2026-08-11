@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import AddToCartButton from '@/components/AddToCartButton';
 import { Product } from '@/lib/firebaseDb';
 
 /* ─── styles ─── */
 const css = `
-  .sr-section {}
+  .sr-section {
+    margin-bottom: 2rem;
+  }
 
   .sr-header {
     display: flex;
@@ -18,7 +20,7 @@ const css = `
   }
 
   .sr-title {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: var(--text-main);
     display: flex;
@@ -31,18 +33,18 @@ const css = `
     content: '';
     display: inline-block;
     width: 4px;
-    height: 22px;
+    height: 24px;
     border-radius: 4px;
     background: linear-gradient(180deg, var(--primary, #6366f1), var(--secondary, #ec4899));
   }
 
   .sr-see-all {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--primary, #6366f1);
     white-space: nowrap;
     text-decoration: none;
-    padding: 5px 14px;
+    padding: 6px 16px;
     border-radius: 20px;
     border: 1px solid rgba(99,102,241,0.3);
     transition: background 0.2s, color 0.2s;
@@ -56,13 +58,13 @@ const css = `
   /* ── arrow buttons ── */
   .sr-arrows {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-shrink: 0;
   }
 
   .sr-arrow {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     border: 1px solid var(--border, rgba(255,255,255,0.1));
     background: var(--surface, rgba(255,255,255,0.06));
@@ -81,32 +83,38 @@ const css = `
     transform: scale(1.1);
     box-shadow: 0 4px 14px rgba(99,102,241,0.35);
   }
-  .sr-arrow:disabled {
-    opacity: 0.3;
-    cursor: default;
-    transform: none;
+  .sr-arrow:active {
+    transform: scale(0.95);
   }
 
   /* ── scroll track ── */
+  .sr-wrapper {
+    position: relative;
+  }
+
   .sr-track {
     display: flex;
-    gap: 1rem;
+    gap: 1.25rem;
     overflow-x: auto;
     scroll-behavior: smooth;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    padding-bottom: 6px;
+    padding: 6px 4px 12px 4px;
+    cursor: grab;
+  }
+  .sr-track:active {
+    cursor: grabbing;
   }
   .sr-track::-webkit-scrollbar { display: none; }
 
   /* ── product card ── */
   .sr-card {
-    flex: 0 0 220px;
-    min-width: 220px;
-    max-width: 220px;
+    flex: 0 0 240px;
+    min-width: 240px;
+    max-width: 240px;
     scroll-snap-align: start;
-    border-radius: 14px;
+    border-radius: 16px;
     background: var(--surface, rgba(255,255,255,0.04));
     border: 1px solid var(--border, rgba(255,255,255,0.08));
     overflow: hidden;
@@ -114,30 +122,62 @@ const css = `
     box-shadow: 0 4px 18px rgba(0,0,0,0.14);
     display: flex;
     flex-direction: column;
+    position: relative;
   }
   .sr-card:hover {
     transform: translateY(-6px) scale(1.015);
     box-shadow: 0 12px 32px rgba(0,0,0,0.22);
   }
 
+  .sr-card-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 190px;
+    overflow: hidden;
+  }
+
   .sr-card-img {
     width: 100%;
-    height: 180px;
+    height: 100%;
     object-fit: cover;
     display: block;
-    border-radius: 14px 14px 0 0;
+    border-radius: 16px 16px 0 0;
     transition: transform 0.4s ease;
   }
-  .sr-card:hover .sr-card-img { transform: scale(1.04); }
+  .sr-card:hover .sr-card-img { transform: scale(1.05); }
 
   .sr-card-img-placeholder {
     width: 100%;
-    height: 180px;
+    height: 100%;
     background: var(--surface-hover, rgba(255,255,255,0.06));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2.5rem;
+  }
+
+  .sr-quickview-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    z-index: 3;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .sr-quickview-btn:hover {
+    background: var(--primary, #6366f1);
+    transform: scale(1.05);
   }
 
   .sr-card-body {
@@ -149,7 +189,7 @@ const css = `
   }
 
   .sr-card-name {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-main);
     white-space: nowrap;
@@ -159,7 +199,7 @@ const css = `
   }
 
   .sr-card-price {
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--secondary, #ec4899);
   }
@@ -169,16 +209,13 @@ const css = `
   }
 
   /* ── gradient fade on edges ── */
-  .sr-wrapper {
-    position: relative;
-  }
   .sr-fade-right {
     pointer-events: none;
     position: absolute;
-    right: 0; top: 0; bottom: 6px;
+    right: 0; top: 0; bottom: 12px;
     width: 60px;
-    background: linear-gradient(to right, transparent, var(--bg, #0f0f1a));
-    border-radius: 0 14px 14px 0;
+    background: linear-gradient(to right, transparent, var(--background, #0f172a));
+    border-radius: 0 16px 16px 0;
   }
 `;
 
@@ -187,16 +224,40 @@ interface Props {
   slug?: string;
   products: Product[];
   formatPrice: (p: number) => string;
+  onQuickView?: (product: Product) => void;
 }
 
-const SCROLL_STEP = 700;
+const SCROLL_STEP = 500;
 
-export default function SwipeRow({ title, slug, products, formatPrice }: Props) {
+export default function SwipeRow({ title, slug, products, formatPrice, onQuickView }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   const scroll = (dir: 'left' | 'right') => {
     if (!trackRef.current) return;
     trackRef.current.scrollBy({ left: dir === 'right' ? SCROLL_STEP : -SCROLL_STEP, behavior: 'smooth' });
+  };
+
+  // Mouse Drag Scrolling
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!trackRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - trackRef.current.offsetLeft);
+    setScrollLeft(trackRef.current.scrollLeft);
+  };
+
+  const handleMouseLeaveOrUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !trackRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - trackRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    trackRef.current.scrollLeft = scrollLeft - walk;
   };
 
   return (
@@ -217,8 +278,9 @@ export default function SwipeRow({ title, slug, products, formatPrice }: Props) 
                 className="sr-arrow"
                 onClick={() => scroll('left')}
                 aria-label={`Scroll ${title} left`}
+                title="Swipe Left"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6"/>
                 </svg>
               </button>
@@ -226,8 +288,9 @@ export default function SwipeRow({ title, slug, products, formatPrice }: Props) 
                 className="sr-arrow"
                 onClick={() => scroll('right')}
                 aria-label={`Scroll ${title} right`}
+                title="Swipe Right"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
               </button>
@@ -237,20 +300,49 @@ export default function SwipeRow({ title, slug, products, formatPrice }: Props) 
 
         {/* scroll track */}
         <div className="sr-wrapper">
-          <div className="sr-track" ref={trackRef}>
+          <div
+            className="sr-track"
+            ref={trackRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeaveOrUp}
+            onMouseUp={handleMouseLeaveOrUp}
+            onMouseMove={handleMouseMove}
+          >
             {products.map(p => (
               <div key={p.id} className="sr-card">
-                <Link href={`/shop/product/${p.id}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column' }}>
-                  {p.imageUrl ? (
-                    <img
-                      src={p.imageUrl}
-                      alt={p.name}
-                      className="sr-card-img"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="sr-card-img-placeholder">🛍️</div>
+                <div className="sr-card-img-wrap">
+                  <Link href={`/shop/product/${p.id}`} style={{ textDecoration: 'none', display: 'block', width: '100%', height: '100%' }}>
+                    {p.imageUrl ? (
+                      <img
+                        src={p.imageUrl}
+                        alt={p.name}
+                        className="sr-card-img"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="sr-card-img-placeholder">🛍️</div>
+                    )}
+                  </Link>
+                  {onQuickView && (
+                    <button
+                      className="sr-quickview-btn"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onQuickView(p);
+                      }}
+                      title="Quick View preview"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      Quick View
+                    </button>
                   )}
+                </div>
+
+                <Link href={`/shop/product/${p.id}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div className="sr-card-body">
                     <div className="sr-card-name" title={p.name}>{p.name}</div>
                     <div className="sr-card-price">{formatPrice(p.price)}</div>

@@ -9,6 +9,8 @@ import ProductCard from '@/components/ProductCard';
 import AddToCartButton from '@/components/AddToCartButton';
 import CategoryRow from '@/components/CategoryRow';
 import SwipeRow from '@/components/SwipeRow';
+import QuickViewModal from '@/components/QuickViewModal';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { listenToProductsLimited, Product, listenToSettings, StoreSettings, listenToCategories, Category, listenToTrustBadges, subscribeToNewsletter, TrustBadge } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './page.module.css';
@@ -22,6 +24,10 @@ function ShopContent() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [badges, setBadges] = useState<TrustBadge[]>([]);
 
+  // Quick View Modal State & Recently Viewed Hook
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const { recentlyViewedIds, addRecentlyViewed } = useRecentlyViewed();
+
   const searchParams = useSearchParams();
 
   // Search & Filter State — pre-fill from ?q= param (Google Sitelinks Searchbox)
@@ -30,6 +36,7 @@ function ShopContent() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sort, setSort] = useState('default');
+  const [onlyHot, setOnlyHot] = useState(false);
 
   // Flash Sale Timer — persisted across page refreshes
   const [timeLeft, setTimeLeft] = useState({ hours: 3, minutes: 45, seconds: 12 });
@@ -46,8 +53,8 @@ function ShopContent() {
   const { currency, setCurrency, formatPrice } = useCurrency();
 
   useEffect(() => {
-    // Set up real-time subscriptions
-    const unsubProducts = listenToProductsLimited(12, (prods) => setAllProducts(prods));
+    // Set up real-time subscriptions for up to 100 products
+    const unsubProducts = listenToProductsLimited(100, (prods) => setAllProducts(prods));
     const unsubCategories = listenToCategories((cats) => setCategories(cats));
     const unsubSettings = listenToSettings((sets) => setSettings(sets));
     const unsubBadges = listenToTrustBadges((bdgs) => setBadges(bdgs));
@@ -89,15 +96,16 @@ function ShopContent() {
   }, []);
 
   // ── Smart Semantic Search ──────────────────────────────────────────────
-  // Expand the raw query into related terms (phone → charger, cable, etc.)
   const expandedTerms = search.trim() ? expandQuery(search.trim()) : [];
   const relatedTerms  = search.trim() ? getRelatedTerms(search.trim()) : [];
   const hasRelated    = relatedTerms.length > 0;
 
   // Filtering & Sorting Logic
   const filteredProducts = allProducts.filter(p => {
-    // Hide archived
     if (p.archived) return false;
+
+    // Filter by Hot Item toggle
+    if (onlyHot && !p.isHot) return false;
 
     // Smart search: match original query OR any expanded related term
     if (search.trim()) {
@@ -106,22 +114,14 @@ function ShopContent() {
       const catL  = (p.categorySlug || '').toLowerCase();
       const combined = `${nameL} ${descL} ${catL}`;
 
-      // First try exact query match (higher precision)
       const exactMatch = combined.includes(search.toLowerCase());
-
-      // Then try any expanded/related term match
       const relatedMatch = expandedTerms.some(term => combined.includes(term));
 
       if (!exactMatch && !relatedMatch) return false;
     }
 
-    // Category match
     if (category !== 'all' && p.categorySlug !== category) return false;
-
-    // Min price match
     if (minPrice && p.price < parseFloat(minPrice)) return false;
-
-    // Max price match
     if (maxPrice && p.price > parseFloat(maxPrice)) return false;
 
     return true;
@@ -132,12 +132,11 @@ function ShopContent() {
     if (sort === 'price-asc') return a.price - b.price;
     if (sort === 'price-desc') return b.price - a.price;
     if (sort === 'name-asc') return a.name.localeCompare(b.name);
-    return 0; // default
+    return 0;
   });
 
   // ── Group products by category for horizontal swipeable rows ──────────
-  // Only used when no filter/search is active (show full browse experience)
-  const isFiltered = !!(search.trim() || category !== 'all' || minPrice || maxPrice || sort !== 'default');
+  const isFiltered = !!(search.trim() || category !== 'all' || minPrice || maxPrice || sort !== 'default' || onlyHot);
   const categoryRows: { slug: string; name: string; products: typeof sortedProducts }[] = [];
   if (!isFiltered) {
     const seen = new Map<string, typeof sortedProducts>();
@@ -151,19 +150,26 @@ function ShopContent() {
         categoryRows.push({ slug: cat.slug, name: cat.name, products: seen.get(cat.slug)! });
       }
     }
-    // Uncategorised fallback
     if (seen.has('__uncategorised') && seen.get('__uncategorised')!.length > 0) {
       categoryRows.push({ slug: '__uncategorised', name: 'Other Products', products: seen.get('__uncategorised')! });
     }
   }
 
-  // Mock Flash Sale Products (pick first 2 products for mockup)
-  const flashSaleItems = allProducts.filter(p => !p.archived).slice(0, 3).map((p, idx) => ({
+  // Flash Sale Items
+  const flashSaleItems = allProducts.filter(p => !p.archived).slice(0, 6).map((p, idx) => ({
     ...p,
-    discountPrice: p.price * 0.8, // 20% off
+    discountPrice: p.price * 0.8,
     progress: idx === 0 ? 82 : idx === 1 ? 45 : 12,
     discountPercent: 20
   }));
+
+  // Hot Items
+  const hotItems = allProducts.filter(p => !p.archived && p.isHot);
+
+  // Recently Viewed Products
+  const recentlyViewedProducts = recentlyViewedIds
+    .map(id => allProducts.find(p => String(p.id) === String(id)))
+    .filter((p): p is Product => Boolean(p && !p.archived));
 
   const handleClearFilters = () => {
     setSearch('');
@@ -171,6 +177,20 @@ function ShopContent() {
     setMinPrice('');
     setMaxPrice('');
     setSort('default');
+    setOnlyHot(false);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const section = document.getElementById('shop-now');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleOpenQuickView = (product: Product) => {
+    addRecentlyViewed(product.id);
+    setQuickViewProduct(product);
   };
 
   const handleSubscribe = async (e: React.FormEvent) => {
@@ -262,35 +282,32 @@ function ShopContent() {
           </div>
         </section>
 
-        {/* Dynamic Horizontal Categories */}
+        {/* Dynamic Horizontal Categories Ribbon */}
         <section className={styles.categorySection}>
           <div className="container">
-            <CategoryRow onSearch={q => setSearch(q)} />
+            <CategoryRow onSearch={q => {
+              setSearch(q);
+              const sec = document.getElementById('shop-now');
+              if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+            }} />
           </div>
         </section>
 
-        {/* Hot Items Section - ONLY shown if owner enabled isHot on products */}
-        {allProducts.filter(p => !p.archived && p.isHot).length > 0 && (
-          <section id="hot-items" style={{ padding: '3.5rem 0', background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+        {/* Hot Items Section - Swipeable Left & Right Row */}
+        {hotItems.length > 0 && (
+          <section id="hot-items" style={{ padding: '3rem 0', background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
             <div className="container">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.75rem' }}>
-                <span style={{ fontSize: '2.2rem' }}>🔥</span>
-                <div>
-                  <h2 className="title" style={{ fontSize: '2rem', margin: 0 }}>Hot Items</h2>
-                  <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Trending top-rated picks curated by the store owner</p>
-                </div>
-              </div>
-
-              <div className="grid-3">
-                {allProducts.filter(p => !p.archived && p.isHot).map(p => (
-                  <ProductCard key={p.id} id={p.id} name={p.name} price={p.price} image={p.imageUrl} description={p.description} product={p} />
-                ))}
-              </div>
+              <SwipeRow
+                title="🔥 Hot Items (Trending)"
+                products={hotItems}
+                formatPrice={formatPrice}
+                onQuickView={handleOpenQuickView}
+              />
             </div>
           </section>
         )}
 
-        {/* Dynamic Flash Sale Section */}
+        {/* Dynamic Flash Sale Section - Swipeable Left & Right Row */}
         <section id="flash-deals" className={styles.flashSale}>
           <div className="container">
             <div className={styles.flashHeader}>
@@ -306,68 +323,15 @@ function ShopContent() {
               </div>
             </div>
 
-            <div className={styles.flashGrid}>
-              {flashSaleItems.map(item => (
-                <div key={`flash-${item.id}`} className="neumorphic-outer" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                  
-                  {/* Discount Badge */}
-                  <div style={{
-                    position: 'absolute', top: '12px', left: '12px', zIndex: 10,
-                    background: 'var(--secondary)', color: 'white', fontWeight: 700,
-                    padding: '4px 10px', borderRadius: '30px', fontSize: '0.8rem'
-                  }}>
-                    -{item.discountPercent}% OFF
-                  </div>
-
-                  <Link href={`/shop/product/${item.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    {item.imageUrl ? (
-                      <div style={{ position: 'relative', width: '100%', height: '220px', overflow: 'hidden' }}>
-                        <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
-                          ★ 4.9
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ width: '100%', height: '220px', background: 'var(--surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic', textAlign: 'center' }}>
-                          {item.description}
-                        </p>
-                      </div>
-                    )}
-
-                    <div style={{ padding: '1.25rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.4rem', fontWeight: 600 }}>{item.name}</h3>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                          <span style={{ color: 'var(--secondary)', fontSize: '1.35rem', fontWeight: 700 }}>
-                            {formatPrice(item.discountPrice)}
-                          </span>
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.95rem', textDecoration: 'line-through' }}>
-                            {formatPrice(item.price)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className={styles.progressContainer}>
-                        <div className={styles.progressText}>
-                          <span>Claimed</span>
-                          <span>{item.progress}%</span>
-                        </div>
-                        <div className={styles.progressBar}>
-                          <div className={styles.progressFill} style={{ width: `${item.progress}%` }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <div style={{ padding: '0 1.5rem 1.5rem' }}>
-                    <AddToCartButton product={{ ...item, price: item.discountPrice }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SwipeRow
+              title="Limited Time Offers"
+              products={flashSaleItems}
+              formatPrice={formatPrice}
+              onQuickView={handleOpenQuickView}
+            />
           </div>
         </section>
+
         {/* Dynamic E-Commerce Catalog Grid & Filters */}
         <section id="shop-now" className={styles.productShowcase}>
           <div className="container">
@@ -376,24 +340,39 @@ function ShopContent() {
               <p className={styles.sectionSubtitle}>Browse, filter, and order premium items catalogued directly in our menus.</p>
             </div>
 
-            {/* Filter Bar */}
+            {/* Filter Bar with Form on Enter Submit */}
             <div className={styles.filterBar}>
-              <div className={styles.filterRowMain}>
-                <div style={{ position: 'relative' }}>
+              <form onSubmit={handleSearchSubmit} className={styles.filterRowMain}>
+                <div style={{ position: 'relative', flex: 1 }}>
                   <input
                     id="shop-search"
                     name="shop-search"
                     type="text"
                     aria-label="Search items"
-                    placeholder="Search items, e.g. phone, shoes, skincare..."
+                    placeholder="Search items & press Enter (e.g. phone, shoes, watch...)"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     className={`${styles.filterInput} neumorphic-inner`}
-                    style={{ paddingLeft: '40px', border: 'none' }}
+                    style={{ paddingLeft: '40px', border: 'none', width: '100%' }}
                   />
-                  <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                  <button
+                    type="submit"
+                    style={{
+                      position: 'absolute',
+                      left: '14px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                    aria-label="Submit search"
+                  >
                     <Icons.Search />
-                  </div>
+                  </button>
                 </div>
 
                 <div>
@@ -429,9 +408,68 @@ function ShopContent() {
                     <option value="name-asc">Alphabetical: A-Z</option>
                   </select>
                 </div>
+              </form>
+
+              {/* Quick Filter Chips */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Quick Filters:</span>
+                <button
+                  onClick={() => setOnlyHot(h => !h)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    border: onlyHot ? '1px solid var(--secondary)' : '1px solid var(--border)',
+                    background: onlyHot ? 'var(--secondary)' : 'var(--surface)',
+                    color: onlyHot ? 'white' : 'var(--text-main)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🔥 Hot Items Only
+                </button>
+
+                <button
+                  onClick={() => { setMaxPrice('5000'); setMinPrice(''); }}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    border: maxPrice === '5000' ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    background: maxPrice === '5000' ? 'var(--primary)' : 'var(--surface)',
+                    color: maxPrice === '5000' ? 'white' : 'var(--text-main)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🏷️ Under 5k
+                </button>
+
+                <button
+                  onClick={() => { setMaxPrice('15000'); setMinPrice(''); }}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    border: maxPrice === '15000' ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    background: maxPrice === '15000' ? 'var(--primary)' : 'var(--surface)',
+                    color: maxPrice === '15000' ? 'white' : 'var(--text-main)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🏷️ Under 15k
+                </button>
+
+                {(search || category !== 'all' || minPrice || maxPrice || sort !== 'default' || onlyHot) && (
+                  <button onClick={handleClearFilters} className={styles.clearFiltersBtn}>
+                    Clear All Filters
+                  </button>
+                )}
               </div>
 
-              <div className={styles.filterRowSecond}>
+              <div className={styles.filterRowSecond} style={{ marginTop: '12px' }}>
                 <div className={styles.priceRangeInputs}>
                   <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Price Limit:</span>
                   <input
@@ -458,9 +496,6 @@ function ShopContent() {
                     style={{ border: 'none' }}
                   />
                 </div>
-                {(search || category !== 'all' || minPrice || maxPrice || sort !== 'default') && (
-                  <button onClick={handleClearFilters} className={styles.clearFiltersBtn}>Clear Filters</button>
-                )}
               </div>
             </div>
 
@@ -528,6 +563,7 @@ function ShopContent() {
                         description={item.description}
                         comments={Math.floor(Math.random() * 40)}
                         product={item}
+                        onQuickView={handleOpenQuickView}
                       />
                     ))}
                     <div ref={sentinelRef} />
@@ -553,13 +589,34 @@ function ShopContent() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
                   {categoryRows.map(row => (
-                    <SwipeRow key={row.slug} title={row.name} products={row.products} formatPrice={formatPrice} />
+                    <SwipeRow
+                      key={row.slug}
+                      title={row.name}
+                      slug={row.slug}
+                      products={row.products}
+                      formatPrice={formatPrice}
+                      onQuickView={handleOpenQuickView}
+                    />
                   ))}
                 </div>
               )
             )}
           </div>
         </section>
+
+        {/* Recently Viewed Products Section */}
+        {recentlyViewedProducts.length > 0 && (
+          <section style={{ padding: '3rem 0', background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
+            <div className="container">
+              <SwipeRow
+                title="👁️ Recently Viewed Products"
+                products={recentlyViewedProducts}
+                formatPrice={formatPrice}
+                onQuickView={handleOpenQuickView}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Guarantees Trust Banner */}
         {badges.filter(b => b.active).length > 0 && (
@@ -571,7 +628,7 @@ function ShopContent() {
                   if (g.id === 'returns') badgeIcon = <Icons.Check style={{ width: '24px', height: '24px' }} />;
                   if (g.id === 'secure') badgeIcon = <Icons.Shield style={{ width: '24px', height: '24px' }} />;
                   if (g.id === 'helpline') badgeIcon = <Icons.Phone style={{ width: '24px', height: '24px' }} />;
-                  
+
                   return (
                     <div key={g.id} className={styles.guaranteeCard}>
                       <div className={styles.guaranteeIcon}>{badgeIcon}</div>
@@ -591,7 +648,7 @@ function ShopContent() {
             <div className={styles.newsletterContent}>
               <h2 className={styles.newsletterTitle}>Subscribe to Our Newsletter</h2>
               <p className={styles.newsletterDesc}>Get early alerts for flash sales, upcoming product collections, and weekly discounts directly in your inbox.</p>
-              
+
               <form onSubmit={handleSubscribe} className={styles.newsletterForm}>
                 <label htmlFor="newsletterEmail" className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', border: 0 }}>Email address</label>
                 <input
@@ -619,6 +676,9 @@ function ShopContent() {
           </div>
         </section>
       </main>
+
+      {/* Quick View Modal */}
+      <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
 
       {/* Multi-column E-commerce Footer */}
       <footer className={styles.footer}>
@@ -693,4 +753,3 @@ export default function Shop() {
     </Suspense>
   );
 }
-

@@ -1,23 +1,31 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Icons } from '@/components/Icons';
-import { getCart } from '@/lib/firebaseDb';
+import { getCart, listenToProductsLimited, Product } from '@/lib/firebaseDb';
 import { useAuth } from '@/context/AuthContext';
 import styles from './Navbar.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ALL_CURRENCIES } from '@/lib/currency';
 
 export default function Navbar() {
+  const router = useRouter();
   const { user, userProfile, logout } = useAuth();
-  const { currency, setCurrency } = useCurrency();
+  const { currency, setCurrency, formatPrice } = useCurrency();
   const [buyerAuth, setBuyerAuth] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [shouldWobble, setShouldWobble] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
+
+  // Search State in Navbar
+  const [navSearch, setNavSearch] = useState('');
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const updateCart = () => {
     const cart = getCart();
@@ -32,15 +40,32 @@ export default function Navbar() {
     const authEmail = user?.email || userProfile?.email || (typeof window !== 'undefined' ? sessionStorage.getItem('buyer_auth') : '');
     if (authEmail) setBuyerAuth(authEmail);
     updateCart();
+
+    const unsub = listenToProductsLimited(50, (prods) => {
+      setProductsList(prods.filter(p => !p.archived));
+    });
+
     window.addEventListener('cart-updated', updateCart);
-    return () => window.removeEventListener('cart-updated', updateCart);
+    return () => {
+      unsub();
+      window.removeEventListener('cart-updated', updateCart);
+    };
   }, [user, userProfile]);
 
-  // Close menu on route change / resize
+  // Close menu & suggestions on outside click / resize
   useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
     const close = () => setMenuOpen(false);
     window.addEventListener('resize', close);
-    return () => window.removeEventListener('resize', close);
+    document.addEventListener('mousedown', handleOutside);
+    return () => {
+      window.removeEventListener('resize', close);
+      document.removeEventListener('mousedown', handleOutside);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -48,6 +73,17 @@ export default function Navbar() {
     setBuyerAuth('');
     setMenuOpen(false);
   };
+
+  const handleNavSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!navSearch.trim()) return;
+    setShowSuggestions(false);
+    router.push(`/shop?q=${encodeURIComponent(navSearch.trim())}`);
+  };
+
+  const matchingSuggestions = navSearch.trim()
+    ? productsList.filter(p => p.name.toLowerCase().includes(navSearch.toLowerCase()) || (p.description && p.description.toLowerCase().includes(navSearch.toLowerCase()))).slice(0, 5)
+    : [];
 
   const currentEmail = user?.email || userProfile?.email || buyerAuth;
   const displayName = userProfile?.displayName || user?.displayName || (currentEmail ? currentEmail.split('@')[0] : '');
@@ -77,9 +113,105 @@ export default function Navbar() {
             ))}
           </div>
 
+          {/* Search Form with Auto-Suggestions */}
+          <div ref={searchContainerRef} style={{ position: 'relative', flex: '0 1 240px' }}>
+            <form onSubmit={handleNavSearchSubmit} style={{ position: 'relative', width: '100%' }}>
+              <input
+                type="text"
+                value={navSearch}
+                onChange={(e) => {
+                  setNavSearch(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                placeholder="Search store..."
+                style={{
+                  width: '100%',
+                  padding: '7px 32px 7px 12px',
+                  borderRadius: '20px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  fontFamily: 'inherit'
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                aria-label="Submit search"
+              >
+                <Icons.Search style={{ width: '14px', height: '14px' }} />
+              </button>
+            </form>
+
+            {/* Instant Suggestions Dropdown */}
+            {showSuggestions && matchingSuggestions.length > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '14px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                  overflow: 'hidden',
+                  zIndex: 300,
+                  minWidth: '260px'
+                }}
+              >
+                <div style={{ padding: '8px 12px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase' }}>
+                  Matching Products
+                </div>
+                {matchingSuggestions.map(p => (
+                  <Link
+                    key={p.id}
+                    href={`/shop/product/${p.id}`}
+                    onClick={() => setShowSuggestions(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '8px 12px',
+                      textDecoration: 'none',
+                      color: 'var(--text-main)',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                  >
+                    {p.imageUrl ? (
+                      <img src={p.imageUrl} alt="" style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '1.2rem' }}>🛍️</span>
+                    )}
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div style={{ fontSize: '0.83rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--secondary)', fontWeight: 700 }}>{formatPrice(p.price)}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Desktop Auth + Cart */}
           <div className={`${styles.authButtons} ${styles.desktopAuth}`}>
-
             {/* Currency Selector Pill */}
             <div style={{ position: 'relative' }}>
               <button
@@ -201,46 +333,6 @@ export default function Navbar() {
             </Link>
           ))}
         </nav>
-
-        <div className={styles.drawerFooter}>
-          {/* Currency Selector in mobile drawer */}
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>💱 Currency</label>
-            <select
-              value={currency.code}
-              onChange={e => {
-                const c = ALL_CURRENCIES.find(c => c.code === e.target.value);
-                if (c) setCurrency(c);
-              }}
-              style={{
-                width: '100%', padding: '9px 12px', borderRadius: '10px',
-                border: '1px solid var(--border)', background: 'var(--surface)',
-                color: 'var(--text-main)', fontFamily: 'inherit', fontSize: '0.9rem',
-                cursor: 'pointer'
-              }}
-            >
-              {ALL_CURRENCIES.map(c => (
-                <option key={c.code} value={c.code}>{c.symbol} {c.name} ({c.code})</option>
-              ))}
-            </select>
-          </div>
-
-          {mounted && currentEmail ? (
-            <>
-              <Link href="/shop/profile" className={styles.drawerUser} onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'block' }}>
-                Signed in as <strong>{displayName}</strong>
-                <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '2px' }}>Manage Profile & Orders →</div>
-              </Link>
-              <button onClick={handleLogout} className={`${styles.loginBtn} ${styles.drawerLogout}`}>
-                <Icons.Logout /> Logout
-              </button>
-            </>
-          ) : (
-            <Link href="/login" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }} onClick={() => setMenuOpen(false)}>
-              <Icons.User /> Sign In
-            </Link>
-          )}
-        </div>
       </div>
     </>
   );

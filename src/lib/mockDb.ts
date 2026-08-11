@@ -36,6 +36,7 @@ export type Product = {
   price: number;
   categorySlug: string;
   imageUrl?: string;
+  images?: string[];
   imageBase64?: string;
   description: string;
   archived?: boolean;

@@ -35,6 +35,7 @@ export type Product = {
   price: number;
   categorySlug: string;
   imageUrl?: string;
+  images?: string[];
   description: string;
   archived?: boolean;
   stock: number;
@@ -288,7 +289,7 @@ export function getCart(): CartItem[] {
   return stored ? JSON.parse(stored) : [];
 }
 
-export function addToCart(product: Product, size?: string, color?: string) {
+export function addToCart(product: Product, size?: string, color?: string, quantity: number = 1) {
   if (typeof window === 'undefined') return;
   const cart = getCart();
   const existing = cart.find(c => 
@@ -297,14 +298,14 @@ export function addToCart(product: Product, size?: string, color?: string) {
     c.color === color
   );
   if (existing) {
-    existing.qty += 1;
+    existing.qty += (quantity || 1);
   } else {
     cart.push({
       productId: product.id,
       name: product.name,
       price: product.price,
       imageUrl: product.imageUrl,
-      qty: 1,
+      qty: (quantity || 1),
       size,
       color
     });

@@ -17,19 +17,30 @@ type ProductCardProps = {
   description?: string;
   comments?: number;
   product?: Product;
+  onQuickView?: (product: Product) => void;
 };
 
-const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, description, comments = 0, product }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, description, comments = 0, product, onQuickView }) => {
   const [wishlisted, setWishlisted] = useState(false);
   const { formatPrice } = useCurrency();
   const stock = product?.stock ?? 99;
   const isLowStock = stock > 0 && stock <= 5;
   const isOutOfStock = stock <= 0;
 
+  const currentProduct: Product = product ?? {
+    id: String(id),
+    name,
+    price,
+    categorySlug: '',
+    description: description || '',
+    imageUrl: image,
+    stock: 1
+  };
+
   return (
     <div className={`neumorphic-outer ${styles.productCard}`}>
       <Link href={`/shop/product/${id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div className={styles.imageWrapper}>
+        <div className={styles.imageWrapper} style={{ position: 'relative' }}>
           {image ? (
             <Image
               src={image}
@@ -46,6 +57,44 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
 
           {/* Rating badge */}
           <div className={styles.ratingBadge}>★ 4.9</div>
+
+          {/* Quick View overlay button */}
+          {onQuickView && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickView(currentProduct);
+              }}
+              style={{
+                position: 'absolute',
+                bottom: '12px',
+                right: '12px',
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: 'white',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: 'pointer',
+                zIndex: 4,
+                boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                transition: 'transform 0.2s, background 0.2s'
+              }}
+              title="Quick View preview"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              Quick View
+            </button>
+          )}
 
           {/* HOT ITEM badge - ONLY shown if owner enabled isHot */}
           {product?.isHot && (
@@ -106,7 +155,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
       </button>
 
       <div style={{ padding: '0 1.25rem 1.25rem' }}>
-        <AddToCartButton product={product ?? { id: String(id), name, price, categorySlug: '', description: description || '', imageUrl: image, stock: 1 }} />
+        <AddToCartButton product={currentProduct} />
       </div>
     </div>
   );
