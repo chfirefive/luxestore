@@ -36,11 +36,12 @@ export default function Navbar() {
   };
 
   useEffect(() => {
+    setBuyerAuth(
+      user?.email || userProfile?.email ||
+      (typeof window !== 'undefined' ? sessionStorage.getItem('buyer_auth') ?? '' : '')
+    );
     setMounted(true);
-    const authEmail = user?.email || userProfile?.email || (typeof window !== 'undefined' ? sessionStorage.getItem('buyer_auth') : '');
-    if (authEmail) setBuyerAuth(authEmail);
     updateCart();
-
     const unsub = listenToProductsLimited(50, (prods) => {
       setProductsList(prods.filter(p => !p.archived));
     });

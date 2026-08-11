@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
 const RECENTLY_VIEWED_KEY = 'luxe_recently_viewed_ids';
 const MAX_ITEMS = 12;
 
-export function useRecentlyViewed() {
-  const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
+function getInitialIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(RECENTLY_VIEWED_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch (e) {
+    console.error('Error loading recently viewed IDs:', e);
+  }
+  return [];
+}
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(RECENTLY_VIEWED_KEY);
-      if (stored) {
-        setRecentlyViewedIds(JSON.parse(stored));
-      }
-    } catch (e) {
-      console.error('Error loading recently viewed IDs:', e);
-    }
-  }, []);
+export function useRecentlyViewed() {
+  const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>(getInitialIds);
 
   const addRecentlyViewed = useCallback((id: string) => {
     if (!id) return;

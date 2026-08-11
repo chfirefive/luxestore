@@ -14,8 +14,6 @@ import {
   where,
   orderBy,
   limit as fbLimit,
-  serverTimestamp,
-  Timestamp,
   onSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -56,6 +54,7 @@ export type StoreSettings = {
   socialFacebook?: string;
   socialInstagram?: string;
   socialTwitter?: string;
+  showFlashDeals?: boolean;
 };
 
 export type TrustBadge = {
@@ -141,6 +140,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   socialFacebook: 'https://facebook.com',
   socialInstagram: 'https://instagram.com',
   socialTwitter: 'https://twitter.com',
+  showFlashDeals: true,
 };
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   CurrencyConfig,
   COUNTRY_CURRENCY_MAP,
@@ -17,25 +17,29 @@ interface UseCurrencyReturn {
   loading: boolean;
 }
 
-export function useCurrency(): UseCurrencyReturn {
-  const [currency, setCurrencyState] = useState<CurrencyConfig>(DEFAULT_CURRENCY);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // 1. Check if user has a manual override saved in localStorage
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as CurrencyConfig;
-        setCurrencyState(parsed);
-        setLoading(false);
-        return;
-      } catch {
-        // malformed, ignore
-      }
+function getInitialCurrency(): CurrencyConfig {
+  if (typeof window === 'undefined') return DEFAULT_CURRENCY;
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved) as CurrencyConfig;
+    } catch {
+      // malformed, ignore
     }
+  }
+  return DEFAULT_CURRENCY;
+}
 
-    // 2. Detect country via free IP geolocation API (no key required)
+export function useCurrency(): UseCurrencyReturn {
+  const [currency, setCurrencyState] = useState<CurrencyConfig>(getInitialCurrency);
+  const [loading, setLoading] = useState(false);
+
+  // Detect country currency via IP geolocation (only if no saved preference)
+  // We do this once via a module-level flag to avoid multiple fetches
+  useState(() => {
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(STORAGE_KEY)) return; // already have a preference
+    setLoading(true);
     fetch('https://ipapi.co/json/')
       .then(res => res.json())
       .then(data => {
@@ -45,17 +49,17 @@ export function useCurrency(): UseCurrencyReturn {
         }
       })
       .catch(() => {
-        // silently fallback to USD
+        // silently fallback to default
       })
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  });
 
-  const setCurrency = (c: CurrencyConfig) => {
+  const setCurrency = useCallback((c: CurrencyConfig) => {
     setCurrencyState(c);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(c));
-  };
+  }, []);
 
   const formatPrice = (usdPrice: number) => _formatPrice(usdPrice, currency);
 

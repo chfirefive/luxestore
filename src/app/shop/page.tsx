@@ -318,30 +318,32 @@ function ShopContent() {
           </section>
         )}
 
-        {/* Dynamic Flash Sale Section - Swipeable Left & Right Row */}
-        <section id="flash-deals" className={styles.flashSale}>
-          <div className="container">
-            <div className={styles.flashHeader}>
-              <div className={styles.flashTitleBox}>
-                <span className={styles.flashIcon}>⚡</span>
-                <h2 className="title" style={{ fontSize: '2rem', margin: 0 }}>Flash Deals</h2>
+        {/* Dynamic Flash Sale Section - Swipeable Left & Right Row (Only shown if owner enabled in Settings) */}
+        {settings?.showFlashDeals !== false && (
+          <section id="flash-deals" className={styles.flashSale}>
+            <div className="container">
+              <div className={styles.flashHeader}>
+                <div className={styles.flashTitleBox}>
+                  <span className={styles.flashIcon}>⚡</span>
+                  <h2 className="title" style={{ fontSize: '2rem', margin: 0 }}>Flash Deals</h2>
+                </div>
+                <div className={styles.flashTimer}>
+                  <span>Ending In:</span>
+                  <span className={styles.timerUnit}>{String(timeLeft.hours).padStart(2, '0')}</span> :
+                  <span className={styles.timerUnit}>{String(timeLeft.minutes).padStart(2, '0')}</span> :
+                  <span className={styles.timerUnit}>{String(timeLeft.seconds).padStart(2, '0')}</span>
+                </div>
               </div>
-              <div className={styles.flashTimer}>
-                <span>Ending In:</span>
-                <span className={styles.timerUnit}>{String(timeLeft.hours).padStart(2, '0')}</span> :
-                <span className={styles.timerUnit}>{String(timeLeft.minutes).padStart(2, '0')}</span> :
-                <span className={styles.timerUnit}>{String(timeLeft.seconds).padStart(2, '0')}</span>
-              </div>
-            </div>
 
-            <SwipeRow
-              title="Limited Time Offers"
-              products={flashSaleItems}
-              formatPrice={formatPrice}
-              onQuickView={handleOpenQuickView}
-            />
-          </div>
-        </section>
+              <SwipeRow
+                title="Limited Time Offers"
+                products={flashSaleItems}
+                formatPrice={formatPrice}
+                onQuickView={handleOpenQuickView}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Dynamic E-Commerce Catalog Grid & Filters */}
         <section id="shop-now" className={styles.productShowcase}>

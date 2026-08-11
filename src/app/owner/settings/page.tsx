@@ -113,6 +113,33 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Flash Deals Toggle Option */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1rem',
+              borderRadius: '12px',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-hover)'
+            }}>
+              <div>
+                <label htmlFor="showFlashDealsToggle" style={{ fontSize: '0.95rem', fontWeight: 700, display: 'block', color: 'var(--text-main)' }}>
+                  ⚡ Show Flash Deals Section
+                </label>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Turn ON to display the Flash Deals countdown timer and discounted items on the store home page.
+                </span>
+              </div>
+              <input
+                id="showFlashDealsToggle"
+                type="checkbox"
+                checked={settings.showFlashDeals !== false}
+                onChange={e => setLocalSettings({ ...settings, showFlashDeals: e.target.checked })}
+                style={{ width: '22px', height: '22px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+              />
+            </div>
+
             <button type="submit" disabled={saving} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: saving ? 0.7 : 1 }}>
               <Icons.Check /> {saving ? 'Saving...' : 'Save Settings'}
             </button>

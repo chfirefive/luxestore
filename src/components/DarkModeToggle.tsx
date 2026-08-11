@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 
 /**
  * Simple dark mode toggle. Stores user preference in localStorage under
@@ -7,36 +7,41 @@ import React, { useEffect, useState } from 'react';
  * dark theme should be defined globally (e.g., using CSS variables). This
  * component can be placed anywhere in the UI, such as the Navbar.
  */
+
+function applyTheme(dark: boolean) {
+  if (typeof document === 'undefined') return;
+  const html = document.documentElement;
+  if (dark) {
+    html.classList.add('dark-mode');
+    html.classList.remove('light-mode');
+  } else {
+    html.classList.add('light-mode');
+    html.classList.remove('dark-mode');
+  }
+}
+
+function getInitialDark(): boolean {
+  if (typeof window === 'undefined') return false;
+  const stored = localStorage.getItem('theme');
+  if (stored) return stored === 'dark';
+  return window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
+}
+
 export const DarkModeToggle: React.FC = () => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const initial = getInitialDark();
+    applyTheme(initial);
+    return initial;
+  });
 
-  // Initialise from localStorage
-  useEffect(() => {
-    const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initial = stored ? stored === 'dark' : prefersDark;
-    setIsDark(initial);
-    updateHtmlClass(initial);
+  const toggle = useCallback(() => {
+    setIsDark(prev => {
+      const newVal = !prev;
+      localStorage.setItem('theme', newVal ? 'dark' : 'light');
+      applyTheme(newVal);
+      return newVal;
+    });
   }, []);
-
-  const updateHtmlClass = (dark: boolean) => {
-    if (typeof document === 'undefined') return;
-    const html = document.documentElement;
-    if (dark) {
-      html.classList.add('dark-mode');
-      html.classList.remove('light-mode');
-    } else {
-      html.classList.add('light-mode');
-      html.classList.remove('dark-mode');
-    }
-  };
-
-  const toggle = () => {
-    const newVal = !isDark;
-    setIsDark(newVal);
-    localStorage.setItem('theme', newVal ? 'dark' : 'light');
-    updateHtmlClass(newVal);
-  };
 
   return (
     <button
