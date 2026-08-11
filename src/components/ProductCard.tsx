@@ -101,7 +101,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
             <div style={{
               position: 'absolute',
               top: '12px',
-              left: '12px',
+              left: '54px',
               background: 'linear-gradient(135deg, #ef4444, #f59e0b)',
               color: 'white',
               fontSize: '0.72rem',
