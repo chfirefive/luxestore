@@ -446,7 +446,16 @@ export default function CategoryRow({ onSearch }: Props) {
         </ul>
 
         {/* ── inline search bar (slides in when search opens) ── */}
-        <div className={`cr-searchbar-wrap${searchOpen ? ' cr-sb-visible' : ''}`} aria-hidden={!searchOpen}>
+        <form
+          className={`cr-searchbar-wrap${searchOpen ? ' cr-sb-visible' : ''}`}
+          aria-hidden={!searchOpen}
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSearch?.(ribbonQuery);
+            const sec = document.getElementById('shop-now');
+            if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
           {/* magnifier icon inside input */}
           <span className="cr-sb-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -458,15 +467,18 @@ export default function CategoryRow({ onSearch }: Props) {
             ref={inputRef}
             type="text"
             className="cr-searchbar-input"
-            placeholder="Search phones, shoes, skincare…"
+            placeholder="Search phones, shoes, skincare… (press Enter)"
             value={ribbonQuery}
             onChange={e => handleRibbonInput(e.target.value)}
-            onKeyDown={e => e.key === 'Escape' && closeSearch()}
+            onKeyDown={e => {
+              if (e.key === 'Escape') closeSearch();
+            }}
             aria-label="Search products"
           />
 
           {/* close × button */}
           <button
+            type="button"
             className="cr-sb-close"
             onClick={closeSearch}
             aria-label="Close search"
@@ -474,7 +486,7 @@ export default function CategoryRow({ onSearch }: Props) {
           >
             ✕
           </button>
-        </div>
+        </form>
       </div>
     </>
   );

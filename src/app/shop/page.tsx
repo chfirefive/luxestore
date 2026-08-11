@@ -59,6 +59,16 @@ function ShopContent() {
     const unsubSettings = listenToSettings((sets) => setSettings(sets));
     const unsubBadges = listenToTrustBadges((bdgs) => setBadges(bdgs));
 
+    const handleSearchTrigger = (e: Event) => {
+      const customEv = e as CustomEvent<string>;
+      if (customEv.detail) {
+        setSearch(customEv.detail);
+        const sec = document.getElementById('shop-now');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('luxe-search-trigger', handleSearchTrigger);
     setLoading(false);
 
     return () => {
@@ -66,6 +76,7 @@ function ShopContent() {
       unsubCategories();
       unsubSettings();
       unsubBadges();
+      window.removeEventListener('luxe-search-trigger', handleSearchTrigger);
     };
   }, []);
 

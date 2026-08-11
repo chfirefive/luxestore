@@ -78,6 +78,9 @@ export default function Navbar() {
     e.preventDefault();
     if (!navSearch.trim()) return;
     setShowSuggestions(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('luxe-search-trigger', { detail: navSearch.trim() }));
+    }
     router.push(`/shop?q=${encodeURIComponent(navSearch.trim())}`);
   };
 

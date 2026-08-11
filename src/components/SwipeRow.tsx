@@ -8,19 +8,19 @@ import { Product } from '@/lib/firebaseDb';
 /* ─── styles ─── */
 const css = `
   .sr-section {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
   }
 
   .sr-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     gap: 1rem;
   }
 
   .sr-title {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: var(--text-main);
     display: flex;
@@ -100,7 +100,7 @@ const css = `
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    padding: 6px 4px 12px 4px;
+    padding: 6px 4px 14px 4px;
     cursor: grab;
   }
   .sr-track:active {
@@ -108,11 +108,11 @@ const css = `
   }
   .sr-track::-webkit-scrollbar { display: none; }
 
-  /* ── product card ── */
+  /* ── responsive product card layout (4 to 5 visible on desktop) ── */
   .sr-card {
-    flex: 0 0 240px;
-    min-width: 240px;
-    max-width: 240px;
+    flex: 0 0 calc(20% - 1rem); /* 5 items visible on desktop */
+    min-width: 210px;
+    max-width: 260px;
     scroll-snap-align: start;
     border-radius: 16px;
     background: var(--surface, rgba(255,255,255,0.04));
@@ -127,6 +127,25 @@ const css = `
   .sr-card:hover {
     transform: translateY(-6px) scale(1.015);
     box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+  }
+
+  @media (max-width: 1280px) {
+    .sr-card {
+      flex: 0 0 calc(25% - 1rem); /* 4 items visible */
+    }
+  }
+
+  @media (max-width: 960px) {
+    .sr-card {
+      flex: 0 0 calc(33.333% - 1rem); /* 3 items visible */
+    }
+  }
+
+  @media (max-width: 640px) {
+    .sr-card {
+      flex: 0 0 200px; /* 2 items visible */
+      min-width: 190px;
+    }
   }
 
   .sr-card-img-wrap {
@@ -212,7 +231,7 @@ const css = `
   .sr-fade-right {
     pointer-events: none;
     position: absolute;
-    right: 0; top: 0; bottom: 12px;
+    right: 0; top: 0; bottom: 14px;
     width: 60px;
     background: linear-gradient(to right, transparent, var(--background, #0f172a));
     border-radius: 0 16px 16px 0;
@@ -227,17 +246,37 @@ interface Props {
   onQuickView?: (product: Product) => void;
 }
 
-const SCROLL_STEP = 500;
-
 export default function SwipeRow({ title, slug, products, formatPrice, onQuickView }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
+  // Smooth Infinite Loop & Single Card Step Navigation
   const scroll = (dir: 'left' | 'right') => {
     if (!trackRef.current) return;
-    trackRef.current.scrollBy({ left: dir === 'right' ? SCROLL_STEP : -SCROLL_STEP, behavior: 'smooth' });
+    const track = trackRef.current;
+    const firstCard = track.firstElementChild as HTMLElement;
+    const step = firstCard ? firstCard.getBoundingClientRect().width + 20 : 250;
+
+    const maxScrollLeft = track.scrollWidth - track.clientWidth;
+    const currentScroll = track.scrollLeft;
+
+    if (dir === 'right') {
+      if (currentScroll >= maxScrollLeft - 15) {
+        // Loop back seamlessly to start
+        track.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        track.scrollBy({ left: step, behavior: 'smooth' });
+      }
+    } else {
+      if (currentScroll <= 15) {
+        // Loop to end
+        track.scrollTo({ left: maxScrollLeft, behavior: 'smooth' });
+      } else {
+        track.scrollBy({ left: -step, behavior: 'smooth' });
+      }
+    }
   };
 
   // Mouse Drag Scrolling
@@ -278,7 +317,7 @@ export default function SwipeRow({ title, slug, products, formatPrice, onQuickVi
                 className="sr-arrow"
                 onClick={() => scroll('left')}
                 aria-label={`Scroll ${title} left`}
-                title="Swipe Left"
+                title="Previous product (Loop)"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6"/>
@@ -288,7 +327,7 @@ export default function SwipeRow({ title, slug, products, formatPrice, onQuickVi
                 className="sr-arrow"
                 onClick={() => scroll('right')}
                 aria-label={`Scroll ${title} right`}
-                title="Swipe Right"
+                title="Next product (Loop)"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"/>
@@ -355,7 +394,7 @@ export default function SwipeRow({ title, slug, products, formatPrice, onQuickVi
             ))}
           </div>
           {/* right fade hint */}
-          {products.length > 3 && <div className="sr-fade-right" />}
+          {products.length > 4 && <div className="sr-fade-right" />}
         </div>
       </div>
     </>
