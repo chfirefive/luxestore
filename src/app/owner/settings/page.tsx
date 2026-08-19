@@ -140,6 +140,49 @@ export default function SettingsPage() {
               />
             </div>
 
+            {/* Announcement Bar Toggle Option */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1rem',
+              borderRadius: '12px',
+              border: '1px solid var(--border)',
+              background: 'var(--surface-hover)',
+              marginTop: '0.5rem'
+            }}>
+              <div>
+                <label htmlFor="showAnnouncementToggle" style={{ fontSize: '0.95rem', fontWeight: 700, display: 'block', color: 'var(--text-main)' }}>
+                  📢 Show Promotional Announcement Bar
+                </label>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Turn ON to display a scrolling ticker bar at the top of the store.
+                </span>
+              </div>
+              <input
+                id="showAnnouncementToggle"
+                type="checkbox"
+                checked={settings.showAnnouncement !== false}
+                onChange={e => setLocalSettings({ ...settings, showAnnouncement: e.target.checked })}
+                style={{ width: '22px', height: '22px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+              />
+            </div>
+
+            {settings.showAnnouncement !== false && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '-0.5rem', padding: '0 1rem' }}>
+                <label htmlFor="announcementText" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Announcement Text</label>
+                <input
+                  id="announcementText"
+                  name="announcementText"
+                  type="text"
+                  value={settings.announcementText || ''}
+                  onChange={e => handleChange('announcementText', e.target.value)}
+                  placeholder="WELCOME! COD AVAILABLE | FREE DELIVERY..."
+                  style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
+                />
+              </div>
+            )}
+
             <button type="submit" disabled={saving} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: saving ? 0.7 : 1 }}>
               <Icons.Check /> {saving ? 'Saving...' : 'Save Settings'}
             </button>

@@ -34,6 +34,7 @@ export type Product = {
   categorySlug: string;
   imageUrl?: string;
   images?: string[];
+  media?: { type: 'image' | 'video'; url: string }[];
   description: string;
   archived?: boolean;
   stock: number;
@@ -55,6 +56,8 @@ export type StoreSettings = {
   socialInstagram?: string;
   socialTwitter?: string;
   showFlashDeals?: boolean;
+  announcementText?: string;
+  showAnnouncement?: boolean;
 };
 
 export type TrustBadge = {
@@ -141,6 +144,8 @@ const DEFAULT_SETTINGS: StoreSettings = {
   socialInstagram: 'https://instagram.com',
   socialTwitter: 'https://twitter.com',
   showFlashDeals: true,
+  announcementText: 'WELCOME! COD AVAILABLE | FREE DELIVERY ABOVE Rs 15000!',
+  showAnnouncement: true,
 };
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ import { Icons } from '@/components/Icons';
 import styles from './page.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ALL_CURRENCIES } from '@/lib/currency';
-import { expandQuery, getRelatedTerms } from '@/lib/searchRelations';
+import { expandQuery, getRelatedTerms } from '@/lib/searchRelations'; 5
 
 function ShopContent() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -108,8 +108,8 @@ function ShopContent() {
 
   // ── Smart Semantic Search ──────────────────────────────────────────────
   const expandedTerms = search.trim() ? expandQuery(search.trim()) : [];
-  const relatedTerms  = search.trim() ? getRelatedTerms(search.trim()) : [];
-  const hasRelated    = relatedTerms.length > 0;
+  const relatedTerms = search.trim() ? getRelatedTerms(search.trim()) : [];
+  const hasRelated = relatedTerms.length > 0;
 
   // Filtering & Sorting Logic
   const filteredProducts = allProducts.filter(p => {
@@ -122,7 +122,7 @@ function ShopContent() {
     if (search.trim()) {
       const nameL = p.name.toLowerCase();
       const descL = p.description.toLowerCase();
-      const catL  = (p.categorySlug || '').toLowerCase();
+      const catL = (p.categorySlug || '').toLowerCase();
       const combined = `${nameL} ${descL} ${catL}`;
 
       const exactMatch = combined.includes(search.toLowerCase());
@@ -587,7 +587,7 @@ function ShopContent() {
                       style={{ border: 'none' }}
                       onClick={() => setDisplayedCount(c => c + 12)}
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
                       Load More Products
                     </button>
                   )}

@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import styles from './Navbar.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ALL_CURRENCIES } from '@/lib/currency';
+import AnnouncementBar from './AnnouncementBar';
 
 export default function Navbar() {
   const router = useRouter();
@@ -101,6 +102,7 @@ export default function Navbar() {
 
   return (
     <>
+      <AnnouncementBar />
       <nav className={styles.navbar}>
         <div className={`container ${styles.navContent} glass-panel`}>
           <Link href="/shop" className={styles.logo}>
@@ -273,7 +275,7 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <Link href="/login" className={styles.loginBtn}>
+              <Link href="/portal" className={styles.loginBtn}>
                 <Icons.User /> Sign In
               </Link>
             )}

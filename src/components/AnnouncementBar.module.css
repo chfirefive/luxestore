@@ -1,0 +1,39 @@
+.announcementBar {
+  background: linear-gradient(90deg, #1e1b4b, #312e81, #1e1b4b);
+  color: #e2e8f0;
+  padding: 8px 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 1001; /* Above navbar */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tickerContainer {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+}
+
+.tickerText {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scrollText 20s linear infinite;
+  padding-left: 100%; /* Start off-screen right */
+}
+
+@keyframes scrollText {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
+}
+
+@media (max-width: 768px) {
+  .announcementBar {
+    font-size: 0.75rem;
+    padding: 6px 0;
+  }
+}

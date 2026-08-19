@@ -24,6 +24,7 @@ export default function ProductsPage() {
   const [boxImageUrl, setBoxImageUrl] = useState('');
   const [sizesStr, setSizesStr] = useState('');
   const [colorsStr, setColorsStr] = useState('');
+  const [mediaList, setMediaList] = useState<{type: 'image'|'video', url: string}[]>([]);
   const [isHot, setIsHot] = useState(false);
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
@@ -76,6 +77,7 @@ export default function ProductsPage() {
       price: parseFloat(price),
       categorySlug: category,
       imageUrl: imageUrl.trim() || "",
+      media: mediaList,
       description: description.trim() || 'No description provided.',
       stock: parseInt(stock) || 0,
       archived: false,
@@ -87,7 +89,7 @@ export default function ProductsPage() {
     });
 
     setProducts(prev => [newProd, ...prev]);
-    setName(''); setPrice(''); setImageUrl(''); setDescription(''); setStock('10'); setBackgroundGradient(''); setBoxImageUrl(''); setSizesStr(''); setColorsStr(''); setIsHot(false);
+    setName(''); setPrice(''); setImageUrl(''); setMediaList([]); setDescription(''); setStock('10'); setBackgroundGradient(''); setBoxImageUrl(''); setSizesStr(''); setColorsStr(''); setIsHot(false);
     setSuccess(`Successfully added "${name}"!`);
     setTimeout(() => setSuccess(''), 3000);
     setSaving(false);
@@ -171,6 +173,52 @@ export default function ProductsPage() {
               <label htmlFor="product-description" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Item Description Details</label>
               <textarea id="product-description" name="product-description" rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Write detailed description of this item (materials, features, story)..." style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit', resize: 'vertical' }} />
             </div>
+          </div>
+
+          {/* MEDIA GALLERY SECTION */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem', border: '1px solid var(--border)', borderRadius: '12px', background: 'var(--surface-hover)' }}>
+            <label style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>Media Gallery (Multiple Images & Videos)</label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '-0.5rem' }}>
+              Add URLs to high-quality images or videos (e.g., .mp4, imgur links). These will be displayed in the professional product gallery.
+            </p>
+            
+            {mediaList.map((media, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--background)', padding: '8px', borderRadius: '8px' }}>
+                <select 
+                  value={media.type} 
+                  onChange={e => {
+                    const newMedia = [...mediaList];
+                    newMedia[idx].type = e.target.value as 'image' | 'video';
+                    setMediaList(newMedia);
+                  }}
+                  style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)' }}
+                >
+                  <option value="image">Image</option>
+                  <option value="video">Video</option>
+                </select>
+                <input 
+                  type="url" 
+                  value={media.url} 
+                  onChange={e => {
+                    const newMedia = [...mediaList];
+                    newMedia[idx].url = e.target.value;
+                    setMediaList(newMedia);
+                  }}
+                  placeholder="https://..." 
+                  style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)' }} 
+                />
+                <button type="button" onClick={() => setMediaList(m => m.filter((_, i) => i !== idx))} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}>
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button 
+              type="button" 
+              onClick={() => setMediaList([...mediaList, { type: 'image', url: '' }])}
+              style={{ alignSelf: 'flex-start', padding: '6px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              + Add Media URL
+            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
