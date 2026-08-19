@@ -118,74 +118,76 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
           <div className={styles.bigBgText}>{brandName}</div>
           
           {/* Center Product Media Gallery or 3D Animated Fallback */}
-          <AnimatePresence mode="wait">
-            {activeMedia ? (
-              activeMedia.type === 'video' ? (
-                <motion.video 
-                  key={`vid-${activeMediaIndex}`}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  src={activeMedia.url}
-                  className={styles.productVideo}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                />
+          <div className={styles.mediaFrame}>
+            <AnimatePresence mode="wait">
+              {activeMedia ? (
+                activeMedia.type === 'video' ? (
+                  <motion.video 
+                    key={`vid-${activeMediaIndex}`}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    src={activeMedia.url}
+                    className={styles.productVideo}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  />
+                ) : (
+                  <motion.img 
+                    key={`img-${activeMediaIndex}`}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    src={activeMedia.url} 
+                    alt={product.name} 
+                    className={styles.productImage}
+                  />
+                )
               ) : (
-                <motion.img 
-                  key={`img-${activeMediaIndex}`}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  src={activeMedia.url} 
-                  alt={product.name} 
-                  className={styles.productImage}
-                />
-              )
-            ) : (
-              <motion.div 
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: [0, -12, 0], opacity: 1 }}
-                transition={{ 
-                  y: { repeat: Infinity, duration: 4, ease: 'easeInOut' },
-                  opacity: { duration: 0.5 }
-                }}
-                className={styles.fallback3DContainer}
-              >
-                <div className={styles.ambientGlow} style={{ background: selectedColor.hex || 'var(--primary)' }} />
-                <svg viewBox="0 0 200 200" className={styles.fallback3DSvg}>
-                  <defs>
-                    <linearGradient id="shoe3DGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor={selectedColor.hex || '#6366f1'} stopOpacity="0.95" />
-                      <stop offset="50%" stopColor="#ec4899" stopOpacity="0.8" />
-                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.9" />
-                    </linearGradient>
-                    <filter id="shadow3D">
-                      <feDropShadow dx="0" dy="15" stdDeviation="10" floodColor="#000" floodOpacity="0.35" />
-                    </filter>
-                  </defs>
-                  <g filter="url(#shadow3D)" transform="rotate(-15 100 100)">
-                    <path 
-                      d="M 30 110 C 30 90, 60 70, 90 70 C 110 70, 130 50, 150 50 C 165 50, 175 60, 170 75 C 165 90, 140 105, 110 115 C 80 125, 40 120, 30 110 Z" 
-                      fill="url(#shoe3DGrad)" 
-                    />
-                    <path 
-                      d="M 25 115 C 25 110, 80 115, 120 112 C 160 110, 175 105, 175 115 C 175 125, 140 130, 80 130 C 40 130, 25 125, 25 115 Z" 
-                      fill="rgba(255,255,255,0.3)" 
-                    />
-                    <circle cx="145" cy="65" r="6" fill="rgba(255,255,255,0.7)" />
-                    <line x1="85" y1="78" x2="115" y2="72" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
-                    <line x1="90" y1="88" x2="120" y2="82" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
-                    <line x1="95" y1="98" x2="125" y2="92" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
-                  </g>
-                </svg>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <motion.div 
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: [0, -12, 0], opacity: 1 }}
+                  transition={{ 
+                    y: { repeat: Infinity, duration: 4, ease: 'easeInOut' },
+                    opacity: { duration: 0.5 }
+                  }}
+                  className={styles.fallback3DContainer}
+                >
+                  <div className={styles.ambientGlow} style={{ background: selectedColor.hex || 'var(--primary)' }} />
+                  <svg viewBox="0 0 200 200" className={styles.fallback3DSvg}>
+                    <defs>
+                      <linearGradient id="shoe3DGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={selectedColor.hex || '#6366f1'} stopOpacity="0.95" />
+                        <stop offset="50%" stopColor="#ec4899" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.9" />
+                      </linearGradient>
+                      <filter id="shadow3D">
+                        <feDropShadow dx="0" dy="15" stdDeviation="10" floodColor="#000" floodOpacity="0.35" />
+                      </filter>
+                    </defs>
+                    <g filter="url(#shadow3D)" transform="rotate(-15 100 100)">
+                      <path 
+                        d="M 30 110 C 30 90, 60 70, 90 70 C 110 70, 130 50, 150 50 C 165 50, 175 60, 170 75 C 165 90, 140 105, 110 115 C 80 125, 40 120, 30 110 Z" 
+                        fill="url(#shoe3DGrad)" 
+                      />
+                      <path 
+                        d="M 25 115 C 25 110, 80 115, 120 112 C 160 110, 175 105, 175 115 C 175 125, 140 130, 80 130 C 40 130, 25 125, 25 115 Z" 
+                        fill="rgba(255,255,255,0.3)" 
+                      />
+                      <circle cx="145" cy="65" r="6" fill="rgba(255,255,255,0.7)" />
+                      <line x1="85" y1="78" x2="115" y2="72" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+                      <line x1="90" y1="88" x2="120" y2="82" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+                      <line x1="95" y1="98" x2="125" y2="92" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+                    </g>
+                  </svg>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Thumbnail Strip (If multiple media items exist) */}
           {mediaList.length > 1 && (
