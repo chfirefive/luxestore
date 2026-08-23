@@ -106,7 +106,7 @@ export default function Navbar() {
       <nav className={styles.navbar}>
         <div className={`container ${styles.navContent} glass-panel`}>
           <Link href="/shop" className={styles.logo}>
-            <Icons.Store />
+            <img src="/logo.png" alt="LuxeStore" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '6px' }} />
             <span>LuxeStore</span>
           </Link>
 
@@ -346,7 +346,7 @@ export default function Navbar() {
       <div className={`${styles.drawer} ${menuOpen ? styles.drawerOpen : ''}`}>
         <div className={styles.drawerHeader}>
           <Link href="/shop" className={styles.logo} onClick={() => setMenuOpen(false)}>
-            <Icons.Store /><span>LuxeStore</span>
+            <img src="/logo.png" alt="LuxeStore" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '6px' }} /><span>LuxeStore</span>
           </Link>
           <button className={styles.drawerClose} onClick={() => setMenuOpen(false)} aria-label="Close menu">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

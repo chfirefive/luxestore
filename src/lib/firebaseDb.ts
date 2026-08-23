@@ -716,3 +716,117 @@ export async function getSubscribers(): Promise<Subscriber[]> {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Subscriber));
 }
 
+// ─── EXTERNAL ORDERS (Marketplace Gateway) ───────────────────────────────────
+
+export type ExternalOrder = {
+  id: string;
+  client: string;
+  email: string;
+  phone: string;
+  address: string;
+  notes?: string;
+  productTitle: string;
+  productUrl: string;            // direct link to the product on external store
+  productImageUrl?: string;
+  externalStoreName: string;    // e.g. 'Amazon', 'AliExpress'
+  externalSupportEmail: string; // support email of external store for auto-forwarding
+  externalPrice: number;        // original price from external store (PKR)
+  ourPrice: number;             // price we charge = externalPrice * (1 + commissionRate)
+  commissionRate: number;       // e.g. 0.15 for 15%
+  currency: string;
+  date: string;
+  status: 'Pending' | 'Ordered' | 'Cancelled' | 'Complaint';
+  orderedDate?: string;
+  cancelledDate?: string;
+  complaintDate?: string;
+  complaintDetails?: string;
+  cancelReason?: string;
+  forwardedToExternal: boolean; // true once auto-email was sent to external store
+  forwardedAt?: string;
+};
+
+export async function addExternalOrder(order: Omit<ExternalOrder, 'id'>): Promise<ExternalOrder> {
+  const ref = await addDoc(collection(db, 'externalOrders'), order);
+  return { id: ref.id, ...order };
+}
+
+export async function getExternalOrder(id: string): Promise<ExternalOrder | null> {
+  const snap = await getDoc(doc(db, 'externalOrders', id));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as ExternalOrder;
+}
+
+export async function getExternalOrders(): Promise<ExternalOrder[]> {
+  const q = query(collection(db, 'externalOrders'), orderBy('date', 'desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as ExternalOrder));
+}
+
+export async function getExternalOrdersByIds(ids: string[]): Promise<ExternalOrder[]> {
+  if (!ids || ids.length === 0) return [];
+  const results: ExternalOrder[] = [];
+  for (const id of ids) {
+    const order = await getExternalOrder(id);
+    if (order) results.push(order);
+  }
+  return results.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+}
+
+export function listenToExternalOrders(callback: (orders: ExternalOrder[]) => void) {
+  const q = query(collection(db, 'externalOrders'), orderBy('date', 'desc'));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as ExternalOrder)));
+  }, (error) => console.error('External orders listener error:', error));
+}
+
+export function listenToExternalOrdersByEmail(email: string, callback: (orders: ExternalOrder[]) => void) {
+  if (!email) return () => {};
+  const q = query(collection(db, 'externalOrders'), where('email', '==', email.trim().toLowerCase()));
+  return onSnapshot(q, (snap) => {
+    const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as ExternalOrder));
+    orders.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    callback(orders);
+  }, (error) => {
+    console.error('External orders by email listener error:', error);
+    callback([]);
+  });
+}
+
+export async function updateExternalOrderStatus(
+  id: string,
+  status: ExternalOrder['status'],
+  extra?: Partial<ExternalOrder>
+) {
+  await updateDoc(doc(db, 'externalOrders', id), {
+    status,
+    ...extra,
+  });
+}
+
+export async function markExternalOrderOrdered(id: string) {
+  await updateDoc(doc(db, 'externalOrders', id), {
+    status: 'Ordered',
+    orderedDate: new Date().toISOString().split('T')[0],
+  });
+}
+
+export async function cancelExternalOrder(id: string, reason: string) {
+  await updateDoc(doc(db, 'externalOrders', id), {
+    status: 'Cancelled',
+    cancelReason: reason,
+    cancelledDate: new Date().toISOString(),
+    forwardedToExternal: true,
+    forwardedAt: new Date().toISOString(),
+  });
+}
+
+export async function fileExternalOrderComplaint(id: string, details: string) {
+  await updateDoc(doc(db, 'externalOrders', id), {
+    status: 'Complaint',
+    complaintDetails: details,
+    complaintDate: new Date().toISOString(),
+    forwardedToExternal: true,
+    forwardedAt: new Date().toISOString(),
+  });
+}
+

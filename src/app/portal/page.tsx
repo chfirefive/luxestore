@@ -15,7 +15,7 @@ export default function Gateway() {
 
       {/* Header Logo */}
       <div className={styles.logoHeader}>
-        <div style={{ color: 'var(--primary)' }}><Icons.Store /></div>
+        <img src="/logo.png" alt="LuxeStore" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '6px' }} />
         <h1 className={styles.logoText} style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit', display: 'inline-block' }}>LuxeStore</h1>
       </div>
 

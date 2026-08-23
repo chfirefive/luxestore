@@ -42,7 +42,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
       {/* Mobile Top Navigation Bar */}
       <div className={styles.mobileHeader}>
         <div className={styles.sidebarHeader} style={{ margin: 0 }}>
-          <div style={{ color: 'white' }}><Icons.Store /></div>
+          <div style={{ color: 'white' }}><img src="/logo.png" alt="LuxeStore" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '5px' }} /></div>
           LuxeStore Owner
         </div>
         <button
@@ -56,7 +56,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
 
       <aside className={`${styles.sidebar} ${mobileMenuOpen ? styles.mobileOpen : ''}`}>
         <div className={styles.sidebarHeader}>
-          <div style={{ color: 'white' }}><Icons.Store /></div>
+          <div style={{ color: 'white' }}><img src="/logo.png" alt="LuxeStore" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '5px' }} /></div>
           LuxeStore Owner
         </div>
         <nav className={styles.navLinks}>

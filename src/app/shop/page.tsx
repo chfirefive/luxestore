@@ -10,6 +10,7 @@ import AddToCartButton from '@/components/AddToCartButton';
 import CategoryRow from '@/components/CategoryRow';
 import SwipeRow from '@/components/SwipeRow';
 import QuickViewModal from '@/components/QuickViewModal';
+import ExternalOrderModal from '@/components/ExternalOrderModal';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { listenToProductsLimited, Product, listenToSettings, StoreSettings, listenToCategories, Category, listenToTrustBadges, subscribeToNewsletter, TrustBadge } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
@@ -51,6 +52,35 @@ function ShopContent() {
   const [displayedCount, setDisplayedCount] = useState(12);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { currency, setCurrency, formatPrice } = useCurrency();
+
+  // ── External Marketplace Gateway State ────────────────────────────────────
+  interface ExtProduct {
+    title: string; price: number; imageUrl: string; link: string;
+    source: string; supportEmail: string; ourPrice: number; commissionRate: number;
+  }
+  const [extQuery, setExtQuery] = useState('');
+  const [extResults, setExtResults] = useState<ExtProduct[]>([]);
+  const [extLoading, setExtLoading] = useState(false);
+  const [extOrdered, setExtOrdered] = useState<ExtProduct | null>(null);
+  const [extSearched, setExtSearched] = useState(false);
+  const [extIsMock, setExtIsMock] = useState(false);
+
+  const handleExtSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!extQuery.trim()) return;
+    setExtLoading(true);
+    setExtSearched(true);
+    try {
+      const res = await fetch(`/api/external-search?q=${encodeURIComponent(extQuery.trim())}`);
+      const data = await res.json();
+      setExtResults(data.results || []);
+      setExtIsMock(data.isMock ?? true);
+    } catch {
+      setExtResults([]);
+    } finally {
+      setExtLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Set up real-time subscriptions for up to 100 products
@@ -562,6 +592,135 @@ function ShopContent() {
                 <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                   <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '1rem' }}>No products match your active search filter settings.</p>
                   <button onClick={handleClearFilters} className="btn-primary" style={{ padding: '10px 20px' }}>Show All Products</button>
+
+                  {/* ── External Marketplace Gateway ── */}
+                  <div style={{
+                    marginTop: '3rem',
+                    background: 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(236,72,153,0.04))',
+                    border: '1px solid rgba(99,102,241,0.25)',
+                    borderRadius: '20px',
+                    padding: '2rem',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '2rem' }}>🌐</span>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, background: 'linear-gradient(135deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                          Can&apos;t find it? We&apos;ll source it!
+                        </h3>
+                        <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                          Search external marketplaces (Amazon, AliExpress, Daraz…) — we order it for you with a small service fee.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* How it works pills */}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '18px' }}>
+                      {['🔍 Search externally', '🛒 We order for you', '📦 COD to your door', '🔁 Auto-cancel & complaints'].map(step => (
+                        <span key={step} style={{
+                          padding: '5px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 600,
+                          background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                          color: '#a5b4fc',
+                        }}>{step}</span>
+                      ))}
+                    </div>
+
+                    <form onSubmit={handleExtSearch} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <input
+                        id="external-search-input"
+                        type="text"
+                        value={extQuery || search}
+                        onChange={e => setExtQuery(e.target.value)}
+                        onFocus={() => { if (!extQuery && search) setExtQuery(search); }}
+                        placeholder={`Search "${search || 'product name'}" on external stores…`}
+                        style={{
+                          flex: 1, minWidth: '220px',
+                          padding: '12px 16px', borderRadius: '12px',
+                          border: '1px solid rgba(99,102,241,0.4)',
+                          background: 'var(--surface)', color: 'var(--text-main)',
+                          fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none',
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={extLoading}
+                        className="btn-primary shine-effect"
+                        style={{ padding: '12px 20px', borderRadius: '12px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}
+                      >
+                        {extLoading ? (
+                          <>
+                            <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                            Searching…
+                          </>
+                        ) : (
+                          <>🔍 Search Externally</>
+                        )}
+                      </button>
+                    </form>
+
+                    {/* External Results */}
+                    {extSearched && !extLoading && (
+                      <div style={{ marginTop: '20px' }}>
+                        {extIsMock && (
+                          <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            ⚠️ Demo results shown. Add a SerpApi key for real live product data.
+                          </p>
+                        )}
+                        {extResults.length === 0 ? (
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '12px' }}>No external results found. Try different keywords.</p>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '14px' }}>
+                            {extResults.map((item, idx) => (
+                              <div key={idx} style={{
+                                background: 'var(--surface)',
+                                border: '1px solid var(--border)',
+                                borderRadius: '16px',
+                                overflow: 'hidden',
+                                transition: 'transform 0.2s, box-shadow 0.2s',
+                                cursor: 'pointer',
+                              }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 30px rgba(99,102,241,0.2)'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                              >
+                                {item.imageUrl ? (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.title}
+                                    style={{ width: '100%', height: '140px', objectFit: 'cover' }}
+                                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div style={{ width: '100%', height: '140px', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>🛍️</div>
+                                )}
+                                <div style={{ padding: '14px' }}>
+                                  <p style={{ fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.4, marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                    {item.title}
+                                  </p>
+                                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>via {item.source}</p>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                    <div>
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'line-through', display: 'block' }}>PKR {item.price.toLocaleString()}</span>
+                                      <span style={{ fontSize: '1rem', fontWeight: 800, color: '#6366f1' }}>PKR {item.ourPrice.toLocaleString()}</span>
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', borderRadius: '8px', padding: '3px 8px', fontWeight: 700 }}>
+                                      +{Math.round(item.commissionRate * 100)}% fee
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => setExtOrdered(item)}
+                                    className="btn-primary"
+                                    style={{ width: '100%', padding: '9px 0', fontSize: '0.82rem', borderRadius: '10px' }}
+                                  >
+                                    🛒 Order via LuxeStore
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <>
@@ -693,13 +852,19 @@ function ShopContent() {
       {/* Quick View Modal */}
       <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
 
+      {/* External Marketplace Order Modal */}
+      <ExternalOrderModal product={extOrdered} onClose={() => setExtOrdered(null)} />
+
+      {/* Spin animation for external search loader */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       {/* Multi-column E-commerce Footer */}
       <footer className={styles.footer}>
         <div className="container">
           <div className={styles.footerGrid}>
             <div className={styles.footerBrand}>
               <a href="#" className={styles.footerLogo}>
-                <Icons.Store /> LuxeStore
+                <img src="/logo.png" alt="LuxeStore" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '5px' }} /> LuxeStore
               </a>
               <p style={{ fontSize: '0.9rem', lineHeight: '1.7', marginTop: '0.5rem' }}>
                 Curating luxury, high-end electronics, and premium fashion collections designed for the modern connoisseur worldwide.

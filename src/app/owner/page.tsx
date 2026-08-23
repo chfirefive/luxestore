@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Icons } from '@/components/Icons';
 import { formatPrice } from '@/lib/currency';
-import { listenToOrders, cleanupExpiredOrders, Order } from '@/lib/firebaseDb';
+import { listenToOrders, cleanupExpiredOrders, Order, listenToExternalOrders, ExternalOrder, markExternalOrderOrdered } from '@/lib/firebaseDb';
 import styles from './Orders.module.css';
 
 export default function OwnerOrders() {
@@ -13,6 +13,10 @@ export default function OwnerOrders() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Ready' | 'Cancelled'>('All');
   const [cleanupInfo, setCleanupInfo] = useState<string | null>(null);
+  const [mainTab, setMainTab] = useState<'regular' | 'external'>('regular');
+  const [extOrders, setExtOrders] = useState<ExternalOrder[]>([]);
+  const [extStatusFilter, setExtStatusFilter] = useState<'All' | 'Pending' | 'Ordered' | 'Cancelled' | 'Complaint'>('All');
+  const [extBusyId, setExtBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     // Run cleanup on mount — removes expired cancelled (>3d) and ready (>14d) orders
@@ -28,8 +32,28 @@ export default function OwnerOrders() {
       setOrders(data);
       setLoading(false);
     });
-    return () => unsub();
+    const unsubExt = listenToExternalOrders(data => setExtOrders(data));
+    return () => { unsub(); unsubExt(); };
   }, []);
+
+  const handleMarkOrdered = async (orderId: string) => {
+    if (extBusyId) return;
+    setExtBusyId(orderId);
+    try {
+      const res = await fetch('/api/external-orders/mark-ordered', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: orderId }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+    } catch (err) {
+      console.error('Mark ordered failed:', err);
+      alert('Failed to update. Please try again.');
+    } finally {
+      setExtBusyId(null);
+    }
+  };
 
   const handleMarkReady = async (orderId: string) => {
     if (busyId) return;
@@ -153,6 +177,34 @@ export default function OwnerOrders() {
         </button>
       </div>
 
+      {/* Main Tab Switcher */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '12px', flexWrap: 'wrap' }}>
+        {(['regular', 'external'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setMainTab(tab)}
+            style={{
+              background: mainTab === tab ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--surface)',
+              color: mainTab === tab ? 'white' : 'var(--text-muted)',
+              border: '1px solid ' + (mainTab === tab ? 'transparent' : 'rgba(255,255,255,0.05)'),
+              padding: '10px 22px', borderRadius: '50px',
+              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+              transition: 'all 0.2s ease', fontFamily: 'inherit',
+              boxShadow: mainTab === tab ? '0 6px 15px rgba(99,102,241,0.4)' : 'none',
+              display: 'flex', alignItems: 'center', gap: '8px',
+            }}
+          >
+            {tab === 'regular' ? '🏪 Store Orders' : '🌐 External Orders'}
+            <span style={{
+              background: mainTab === tab ? 'rgba(255,255,255,0.25)' : 'var(--surface-hover)',
+              borderRadius: '10px', padding: '1px 8px', fontSize: '0.8rem',
+            }}>
+              {tab === 'regular' ? orders.length : extOrders.length}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Auto-Cleanup Notification */}
       {cleanupInfo && (
         <div style={{
@@ -173,6 +225,7 @@ export default function OwnerOrders() {
         </div>
       )}
 
+      {mainTab === 'regular' && (<>
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         {[
@@ -385,6 +438,136 @@ export default function OwnerOrders() {
           </tbody>
         </table>
       </div>
+      </>)}
+
+      {/* ── EXTERNAL ORDERS TAB ── */}
+      {mainTab === 'external' && (
+        <div style={{ marginTop: '0' }}>
+          {/* External Status Filter */}
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            {(['All', 'Pending', 'Ordered', 'Cancelled', 'Complaint'] as const).map(tab => {
+              const count = tab === 'All' ? extOrders.length : extOrders.filter(o => o.status === tab).length;
+              const isActive = extStatusFilter === tab;
+              const color = tab === 'Ordered' ? '#10b981' : tab === 'Cancelled' ? '#ef4444' : tab === 'Complaint' ? '#f59e0b' : tab === 'Pending' ? '#f59e0b' : undefined;
+              return (
+                <button key={tab} onClick={() => setExtStatusFilter(tab)} style={{
+                  background: isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--surface)',
+                  color: isActive ? 'white' : 'var(--text-muted)',
+                  border: '1px solid ' + (isActive ? 'transparent' : 'rgba(255,255,255,0.05)'),
+                  padding: '8px 18px', borderRadius: '50px', fontWeight: 700,
+                  fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit',
+                  boxShadow: isActive ? '0 6px 15px rgba(99,102,241,0.45)' : 'none',
+                  transition: 'all 0.2s',
+                }}>
+                  {tab} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* External Orders Table */}
+          <div className={styles.tableContainer} style={{ overflowX: 'auto' }}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.th}>Ref #</th>
+                  <th className={styles.th}>Customer</th>
+                  <th className={styles.th}>Product</th>
+                  <th className={styles.th}>Store</th>
+                  <th className={styles.th}>Ext. Price</th>
+                  <th className={styles.th}>Our Price</th>
+                  <th className={styles.th}>Date</th>
+                  <th className={styles.th}>Status</th>
+                  <th className={styles.th}>Forwarded</th>
+                  <th className={styles.th}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(extStatusFilter === 'All' ? extOrders : extOrders.filter(o => o.status === extStatusFilter)).length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className={styles.td} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem' }}>
+                      No external orders in this category.
+                    </td>
+                  </tr>
+                ) : (
+                  (extStatusFilter === 'All' ? extOrders : extOrders.filter(o => o.status === extStatusFilter)).map(order => {
+                    const isPending = order.status === 'Pending';
+                    const isOrdered = order.status === 'Ordered';
+                    const isCancelled = order.status === 'Cancelled';
+                    const isComplaint = order.status === 'Complaint';
+                    const statusColor = isOrdered ? '#10b981' : isCancelled ? '#ef4444' : isComplaint ? '#f59e0b' : '#f59e0b';
+                    return (
+                      <tr key={order.id} className={styles.row}>
+                        <td className={styles.td}><strong>{order.id.slice(-6).toUpperCase()}</strong></td>
+                        <td className={styles.td}>
+                          <div style={{ fontWeight: 600 }}>{order.client}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.email}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{order.phone}</div>
+                        </td>
+                        <td className={styles.td}>
+                          <a href={order.productUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'block', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={order.productTitle}>
+                            {order.productTitle}
+                          </a>
+                          {order.complaintDetails && (
+                            <div style={{ marginTop: '4px', fontSize: '0.75rem', color: '#f59e0b', fontStyle: 'italic', maxWidth: '180px' }} title={order.complaintDetails}>
+                              📢 {order.complaintDetails.slice(0, 60)}…
+                            </div>
+                          )}
+                          {order.cancelReason && (
+                            <div style={{ marginTop: '4px', fontSize: '0.75rem', color: '#ef4444', fontStyle: 'italic' }}>
+                              ❌ {order.cancelReason}
+                            </div>
+                          )}
+                        </td>
+                        <td className={styles.td}>
+                          <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{order.externalStoreName}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{order.externalSupportEmail}</div>
+                        </td>
+                        <td className={styles.td} style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{order.currency} {order.externalPrice.toLocaleString()}</td>
+                        <td className={styles.td}><strong style={{ color: '#6366f1' }}>{order.currency} {order.ourPrice.toLocaleString()}</strong><br /><span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>+{Math.round(order.commissionRate * 100)}% fee</span></td>
+                        <td className={styles.td}>{order.date}</td>
+                        <td className={styles.td}>
+                          <span style={{
+                            background: statusColor + '20',
+                            color: statusColor,
+                            border: '1px solid ' + statusColor + '40',
+                            borderRadius: '20px', padding: '3px 10px',
+                            fontSize: '0.78rem', fontWeight: 700,
+                          }}>{order.status}</span>
+                        </td>
+                        <td className={styles.td}>
+                          {order.forwardedToExternal ? (
+                            <span style={{ color: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}>✅ Auto-forwarded</span>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
+                          )}
+                          {order.forwardedAt && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{new Date(order.forwardedAt).toLocaleDateString()}</div>
+                          )}
+                        </td>
+                        <td className={styles.td}>
+                          {isPending ? (
+                            <button
+                              className={styles.actionBtn}
+                              onClick={() => handleMarkOrdered(order.id)}
+                              disabled={extBusyId === order.id}
+                              style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                            >
+                              {extBusyId === order.id ? '…' : <><Icons.Check /> Mark Ordered</>}
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Read-only audit</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

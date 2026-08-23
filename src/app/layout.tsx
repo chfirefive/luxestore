@@ -60,10 +60,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/logo.png', sizes: 'any' },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
 };
 
@@ -95,7 +95,7 @@ const jsonLdData = {
       'name': 'LuxeStorePay',
       'alternateName': ['LuxeStore', 'LuxeStore Pay'],
       'url': siteUrl,
-      'logo': `${siteUrl}/favicon.ico`,
+      'logo': `${siteUrl}/logo.png`,
       'sameAs': [],
     },
   ],
