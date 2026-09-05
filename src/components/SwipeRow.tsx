@@ -395,7 +395,12 @@ export default function SwipeRow({ title, slug, products, formatPrice, onQuickVi
                 <Link href={`/shop/product/${p.id}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div className="sr-card-body">
                     <div className="sr-card-name" title={p.name}>{p.name}</div>
-                    <div className="sr-card-price">{formatPrice(p.price)}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                      <span className="sr-card-price">{formatPrice(p.price)}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'line-through', fontWeight: 500 }}>
+                        {formatPrice(Math.round(p.price * 1.25))}
+                      </span>
+                    </div>
                   </div>
                 </Link>
                 <div className="sr-card-footer">

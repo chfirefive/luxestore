@@ -45,6 +45,24 @@ export type Product = {
   isHot?: boolean;
 };
 
+export type HeroSlide = {
+  id: string;
+  title: string;
+  subtitle: string;
+  desktopImage: string;
+  mobileImage?: string;
+  buttonText: string;
+  buttonLink: string;
+  active: boolean;
+};
+
+export type TickerItem = {
+  id: string;
+  text: string;
+  icon: 'truck' | 'shield' | 'clock' | 'star' | 'gift';
+  active: boolean;
+};
+
 export type StoreSettings = {
   heroTitle: string;
   heroSubtitle: string;
@@ -58,6 +76,13 @@ export type StoreSettings = {
   showFlashDeals?: boolean;
   announcementText?: string;
   showAnnouncement?: boolean;
+  // Luxury Watch / Timezone Storefront controls
+  heroSlides?: HeroSlide[];
+  tickerItems?: TickerItem[];
+  showTicker?: boolean;
+  showComparePrice?: boolean;
+  compareAtMultiplier?: number; // e.g. 1.25 for 20% off
+  brandAccentColor?: string; // default #D6B269
 };
 
 export type TrustBadge = {
@@ -134,18 +159,60 @@ const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
 ];
 
 const DEFAULT_SETTINGS: StoreSettings = {
-  heroTitle: 'Elevate Your Lifestyle.',
-  heroSubtitle: 'Discover curated luxury goods, high-end electronics, and premium fashion designed for the modern connoisseur.',
-  aboutContent: 'Welcome to LuxeStore. We are dedicated to sourcing only the highest quality products from around the globe.',
+  heroTitle: 'Exquisite Timepieces & Luxury Goods',
+  heroSubtitle: 'Discover genuine wrist watches, automatic movements, and handcrafted accessories engineered for perfection.',
+  aboutContent: 'Welcome to LuxeStore. Manufacturing and sourcing authentic luxury timepieces and premium goods since 1999.',
   contactEmail: 'support@luxestore.com',
-  contactPhone: '+1 (555) 123-4567',
-  contactAddress: '123 Luxury Avenue, Beverly Hills, CA 90210',
+  contactPhone: '+92 (300) 123-4567',
+  contactAddress: 'Luxury Boulevard, Blue Area, Islamabad, Pakistan',
   socialFacebook: 'https://facebook.com',
   socialInstagram: 'https://instagram.com',
   socialTwitter: 'https://twitter.com',
   showFlashDeals: true,
-  announcementText: 'WELCOME! COD AVAILABLE | FREE DELIVERY ABOVE Rs 15000!',
+  announcementText: 'WELCOME! CASH ON DELIVERY NATIONWIDE | FREE DELIVERY ABOVE Rs. 15,000!',
   showAnnouncement: true,
+  showTicker: true,
+  showComparePrice: true,
+  compareAtMultiplier: 1.25, // 20% discount strike-through
+  brandAccentColor: '#D6B269',
+  tickerItems: [
+    { id: '1', text: 'Nationwide Free Express Delivery', icon: 'truck', active: true },
+    { id: '2', text: '1-Year International Warranty Included', icon: 'shield', active: true },
+    { id: '3', text: 'Master Craftsmanship Since 1999', icon: 'clock', active: true },
+    { id: '4', text: '100% Genuine Timepieces Guaranteed', icon: 'star', active: true },
+  ],
+  heroSlides: [
+    {
+      id: 'slide-1',
+      title: 'Precision In Every Second',
+      subtitle: 'Explore our iconic automatic and quartz collections made with sapphire crystal and stainless steel.',
+      desktopImage: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=2000&q=85',
+      mobileImage: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=85',
+      buttonText: 'Shop All Timepieces',
+      buttonLink: '#shop-now',
+      active: true
+    },
+    {
+      id: 'slide-2',
+      title: 'Master Chronograph Edition',
+      subtitle: 'Luxury finishes, high-grade complications, and timeless elegance on your wrist.',
+      desktopImage: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=2000&q=85',
+      mobileImage: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=85',
+      buttonText: 'Explore Men Watches',
+      buttonLink: '#shop-now',
+      active: true
+    },
+    {
+      id: 'slide-3',
+      title: 'Grace & Minimalist Radiance',
+      subtitle: 'Curated wristwatches and fine pairings designed for subtle sophistication.',
+      desktopImage: 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=2000&q=85',
+      mobileImage: 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=800&q=85',
+      buttonText: 'Browse Collections',
+      buttonLink: '#collections-showcase',
+      active: true
+    }
+  ]
 };
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────
@@ -244,7 +311,13 @@ export async function getSettings(): Promise<StoreSettings> {
       await setDoc(doc(db, 'settings', 'store'), DEFAULT_SETTINGS);
       return DEFAULT_SETTINGS;
     }
-    return snap.data() as StoreSettings;
+    const data = snap.data() as StoreSettings;
+    return {
+      ...DEFAULT_SETTINGS,
+      ...data,
+      heroSlides: (data.heroSlides && data.heroSlides.length > 0) ? data.heroSlides : DEFAULT_SETTINGS.heroSlides,
+      tickerItems: (data.tickerItems && data.tickerItems.length > 0) ? data.tickerItems : DEFAULT_SETTINGS.tickerItems,
+    };
   } catch (e) {
     // If the client is offline or Firestore can't be reached, fall back to defaults
     console.warn('Firestore getSettings failed, returning default settings:', e);
@@ -259,7 +332,13 @@ export async function saveSettings(settings: StoreSettings) {
 export function listenToSettings(callback: (settings: StoreSettings) => void) {
   return onSnapshot(doc(db, 'settings', 'store'), (snap) => {
     if (snap.exists()) {
-      callback(snap.data() as StoreSettings);
+      const data = snap.data() as StoreSettings;
+      callback({
+        ...DEFAULT_SETTINGS,
+        ...data,
+        heroSlides: (data.heroSlides && data.heroSlides.length > 0) ? data.heroSlides : DEFAULT_SETTINGS.heroSlides,
+        tickerItems: (data.tickerItems && data.tickerItems.length > 0) ? data.tickerItems : DEFAULT_SETTINGS.tickerItems,
+      });
     } else {
       callback(DEFAULT_SETTINGS);
     }

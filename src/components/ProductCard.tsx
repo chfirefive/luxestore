@@ -17,15 +17,32 @@ type ProductCardProps = {
   description?: string;
   comments?: number;
   product?: Product;
+  compareAtMultiplier?: number;
+  showComparePrice?: boolean;
   onQuickView?: (product: Product) => void;
 };
 
-const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, description, comments = 0, product, onQuickView }) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+  id,
+  name,
+  price,
+  image,
+  description,
+  comments = 0,
+  product,
+  compareAtMultiplier = 1.25,
+  showComparePrice = true,
+  onQuickView,
+}) => {
   const [wishlisted, setWishlisted] = useState(false);
   const { formatPrice } = useCurrency();
   const stock = product?.stock ?? 99;
   const isLowStock = stock > 0 && stock <= 5;
   const isOutOfStock = stock <= 0;
+
+  // Calculate compare-at price & discount percent
+  const comparePrice = Math.round(price * compareAtMultiplier);
+  const discountPercent = Math.round(((comparePrice - price) / comparePrice) * 100);
 
   const currentProduct: Product = product ?? {
     id: String(id),
@@ -51,7 +68,27 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
             />
           ) : (
             <div className={styles.imagePlaceholder}>
-              <p>{description || 'No description available.'}</p>
+              <p>{description || 'Authentic watch timepieces'}</p>
+            </div>
+          )}
+
+          {/* Luxury Discount Tag */}
+          {showComparePrice && discountPercent > 0 && !isOutOfStock && (
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              left: '52px',
+              background: '#ef4444',
+              color: '#ffffff',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              padding: '3px 8px',
+              borderRadius: '6px',
+              letterSpacing: '0.04em',
+              zIndex: 3,
+              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
+            }}>
+              SAVE {discountPercent}%
             </div>
           )}
 
@@ -89,7 +126,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
               title="Quick View preview"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
               Quick View
@@ -100,8 +137,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
           {product?.isHot && (
             <div style={{
               position: 'absolute',
-              top: '12px',
-              left: '54px',
+              bottom: '12px',
+              left: '12px',
               background: 'linear-gradient(135deg, #ef4444, #f59e0b)',
               color: 'white',
               fontSize: '0.72rem',
@@ -115,7 +152,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
               alignItems: 'center',
               gap: '4px'
             }}>
-              🔥 HOT ITEM
+              🔥 HOT
             </div>
           )}
 
@@ -130,13 +167,27 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, descr
 
         <div className={styles.cardBody}>
           <h3 className={styles.productName}>{name}</h3>
+          
           <div className={styles.priceRow}>
-            <p className={styles.price}>{formatPrice(price)}</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+              <p className={styles.price}>{formatPrice(price)}</p>
+              {showComparePrice && (
+                <span style={{
+                  fontSize: '0.86rem',
+                  color: 'var(--text-muted)',
+                  textDecoration: 'line-through',
+                  fontWeight: 500
+                }}>
+                  {formatPrice(comparePrice)}
+                </span>
+              )}
+            </div>
+
             <span className={styles.comments}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              {comments}
+              {comments || 24}
             </span>
           </div>
         </div>

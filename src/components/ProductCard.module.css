@@ -1,12 +1,21 @@
 .productCard {
   display: flex;
   flex-direction: column;
-  height: 380px;
-  max-height: 380px;
+  height: 410px;
+  max-height: 410px;
   justify-content: space-between;
   position: relative;
   overflow: hidden !important; /* Contain all image and button elements */
-  border-radius: var(--radius);
+  border-radius: 16px;
+  border: 1px solid rgba(214, 178, 105, 0.15);
+  background: var(--surface);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.productCard:hover {
+  border-color: rgba(214, 178, 105, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(214, 178, 105, 0.1);
+  transform: translateY(-4px);
 }
 
 /* ── Image ── */

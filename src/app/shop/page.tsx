@@ -11,13 +11,16 @@ import CategoryRow from '@/components/CategoryRow';
 import SwipeRow from '@/components/SwipeRow';
 import QuickViewModal from '@/components/QuickViewModal';
 import ExternalOrderModal from '@/components/ExternalOrderModal';
+import LuxuryTicker from '@/components/LuxuryTicker';
+import WatchHeroSlider from '@/components/WatchHeroSlider';
+import WatchCollectionsShowcase from '@/components/WatchCollectionsShowcase';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { listenToProductsLimited, Product, listenToSettings, StoreSettings, listenToCategories, Category, listenToTrustBadges, subscribeToNewsletter, TrustBadge } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './page.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ALL_CURRENCIES } from '@/lib/currency';
-import { expandQuery, getRelatedTerms } from '@/lib/searchRelations'; 5
+import { expandQuery, getRelatedTerms } from '@/lib/searchRelations';
 
 function ShopContent() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -246,30 +249,37 @@ function ShopContent() {
 
   return (
     <>
+      {/* Luxury Timezone Continuous Ticker */}
+      <LuxuryTicker items={settings?.tickerItems} show={settings?.showTicker !== false} />
+
       <Navbar />
 
       <main className={`${styles.main} animate-fade-in`}>
-        {/* Banner / Hero Slider */}
-        <section className={styles.hero}>
-          <div className="container">
-            <div className={styles.heroContent}>
-              <h1 className="title" style={{ fontSize: '3.4rem', lineHeight: '1.2' }}>
-                {settings?.heroTitle || 'Elevate Your Lifestyle.'}
-              </h1>
-              <p className={styles.heroSubtitle}>
-                {settings?.heroSubtitle || 'Discover curated luxury goods, high-end electronics, and premium fashion designed for the modern connoisseur.'}
-              </p>
-              <div className={styles.heroActions}>
-                <a href="#shop-now" className="btn-primary shine-effect" style={{ padding: '15px 32px', fontSize: '1.05rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-                  Shop Now
-                </a>
-                <a href="#flash-deals" className={`${styles.secondaryBtn} shine-effect`} style={{ textDecoration: 'none' }}>
-                  Explore Flash Deals
-                </a>
+        {/* Banner / Hero Slider - WatchHeroSlider with owner slide management */}
+        {settings?.heroSlides && settings.heroSlides.length > 0 ? (
+          <WatchHeroSlider slides={settings.heroSlides} />
+        ) : (
+          <section className={styles.hero}>
+            <div className="container">
+              <div className={styles.heroContent}>
+                <h1 className="title" style={{ fontSize: '3.4rem', lineHeight: '1.2' }}>
+                  {settings?.heroTitle || 'Exquisite Timepieces & Luxury Goods'}
+                </h1>
+                <p className={styles.heroSubtitle}>
+                  {settings?.heroSubtitle || 'Discover genuine wrist watches, automatic movements, and handcrafted accessories engineered for perfection.'}
+                </p>
+                <div className={styles.heroActions}>
+                  <a href="#shop-now" className="btn-primary shine-effect" style={{ padding: '15px 32px', fontSize: '1.05rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                    Shop Now
+                  </a>
+                  <a href="#flash-deals" className={`${styles.secondaryBtn} shine-effect`} style={{ textDecoration: 'none' }}>
+                    Explore Flash Deals
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Currency Selector Banner */}
         <section style={{
@@ -322,6 +332,17 @@ function ShopContent() {
             </span>
           </div>
         </section>
+
+        {/* Curated Collections Showcase (Circular / Rounded Watch Collection Cards) */}
+        <WatchCollectionsShowcase
+          categories={categories}
+          products={allProducts}
+          onSelectCategory={(slug) => {
+            setCategory(slug);
+            const sec = document.getElementById('shop-now');
+            if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
 
         {/* Dynamic Horizontal Categories Ribbon */}
         <section className={styles.categorySection}>
@@ -735,6 +756,8 @@ function ShopContent() {
                         description={item.description}
                         comments={Math.floor(Math.random() * 40)}
                         product={item}
+                        compareAtMultiplier={settings?.compareAtMultiplier ?? 1.25}
+                        showComparePrice={settings?.showComparePrice !== false}
                         onQuickView={handleOpenQuickView}
                       />
                     ))}
