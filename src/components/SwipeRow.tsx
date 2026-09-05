@@ -368,6 +368,11 @@ export default function SwipeRow({ title, slug, products, formatPrice, onQuickVi
                         alt={p.name}
                         className="sr-card-img"
                         loading="lazy"
+                        style={{
+                          objectPosition: p.imagePosition || 'center',
+                          objectFit: p.imageFit || 'cover',
+                          transform: p.imageZoom && p.imageZoom !== 1 ? `scale(${p.imageZoom})` : undefined
+                        }}
                       />
                     ) : (
                       <div className="sr-card-img-placeholder">🛍️</div>

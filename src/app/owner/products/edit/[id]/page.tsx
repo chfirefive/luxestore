@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icons } from '@/components/Icons';
 import { getCategories, Category, getProductById, updateProduct } from '@/lib/firebaseDb';
+import ImageFrameManager, { FramingConfig } from '@/components/ImageFrameManager';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -14,6 +15,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imagePosition, setImagePosition] = useState('50% 50%');
+  const [imageFit, setImageFit] = useState<'cover' | 'contain'>('cover');
+  const [imageZoom, setImageZoom] = useState(1);
+  const [isFramingOpen, setIsFramingOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [stock, setStock] = useState('0');
   const [backgroundGradient, setBackgroundGradient] = useState('');
@@ -35,6 +40,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setPrice(prod.price.toString());
         setCategory(prod.categorySlug);
         setImageUrl(prod.imageUrl || '');
+        setImagePosition(prod.imagePosition || '50% 50%');
+        setImageFit(prod.imageFit || 'cover');
+        setImageZoom(prod.imageZoom || 1);
         setDescription(prod.description);
         setStock(prod.stock !== undefined ? prod.stock.toString() : '0');
         setBackgroundGradient(prod.backgroundGradient || '');
@@ -75,6 +83,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         price: parseFloat(price),
         categorySlug: category,
         imageUrl: imageUrl.trim() || "",
+        imagePosition,
+        imageFit,
+        imageZoom,
         media: mediaList,
         description: description.trim() || 'No description provided.',
         stock: parseInt(stock) || 0,
@@ -158,10 +169,60 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 }}
                 style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
               {imageUrl && (
-                <div style={{ position: 'relative', width: '100px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                  <img src={imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <button type="button" onClick={() => setImageUrl('')}
-                    style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ position: 'relative', width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)', background: '#0b0f17' }}>
+                    {imageFit === 'contain' && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundImage: `url(${imageUrl})`,
+                          backgroundPosition: imagePosition || 'center',
+                          backgroundSize: 'cover',
+                          filter: 'blur(12px) brightness(0.4)',
+                          transform: 'scale(1.2)'
+                        }}
+                      />
+                    )}
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: imageFit,
+                        objectPosition: imagePosition,
+                        transform: imageZoom !== 1 ? `scale(${imageZoom})` : undefined
+                      }}
+                    />
+                    <button type="button" onClick={() => setImageUrl('')}
+                      style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>✕</button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsFramingOpen(true)}
+                    style={{
+                      background: 'rgba(214, 178, 105, 0.15)',
+                      border: '1px solid #D6B269',
+                      color: '#D6B269',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      alignSelf: 'flex-start'
+                    }}
+                  >
+                    🎯 Frame & Focus Adjuster
+                  </button>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Focal: {imagePosition} • {imageFit} • {Math.round(imageZoom * 100)}%
+                  </span>
                 </div>
               )}
             </div>
@@ -264,6 +325,25 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </div>
         </form>
       </div>
+
+      {/* Interactive Image Framing & Focal Point Modal */}
+      {isFramingOpen && imageUrl && (
+        <ImageFrameManager
+          isOpen={true}
+          onClose={() => setIsFramingOpen(false)}
+          imageUrl={imageUrl}
+          title="Product Photo Framing & Focal Point"
+          initialPosition={imagePosition}
+          initialFit={imageFit}
+          initialZoom={imageZoom}
+          aspectHint="card"
+          onSave={(config: FramingConfig) => {
+            setImagePosition(config.position);
+            setImageFit(config.fit);
+            setImageZoom(config.zoom);
+          }}
+        />
+      )}
     </div>
   );
 }

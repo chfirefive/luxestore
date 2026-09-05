@@ -12,6 +12,7 @@ import {
   HeroSlide,
   TickerItem
 } from '@/lib/firebaseDb';
+import ImageFrameManager, { FramingConfig } from '@/components/ImageFrameManager';
 import styles from '../Orders.module.css';
 
 export default function SettingsPage() {
@@ -23,6 +24,30 @@ export default function SettingsPage() {
 
   // Active section tab in Settings
   const [activeTab, setActiveTab] = useState<'banners' | 'ticker' | 'storefront' | 'guarantees'>('banners');
+
+  // Interactive Framing Modal state
+  const [framingTarget, setFramingTarget] = useState<{
+    slideId: string;
+    type: 'desktop' | 'mobile';
+    imageUrl: string;
+    position: string;
+    fit: 'cover' | 'contain';
+    zoom: number;
+  } | null>(null);
+
+  const handleSaveFraming = (config: FramingConfig) => {
+    if (!framingTarget) return;
+    const { slideId, type } = framingTarget;
+    if (type === 'desktop') {
+      handleSlideChange(slideId, 'desktopPosition', config.position);
+      handleSlideChange(slideId, 'desktopFit', config.fit);
+      handleSlideChange(slideId, 'desktopZoom', config.zoom);
+    } else {
+      handleSlideChange(slideId, 'mobilePosition', config.position);
+      handleSlideChange(slideId, 'mobileFit', config.fit);
+      handleSlideChange(slideId, 'mobileZoom', config.zoom);
+    }
+  };
 
   useEffect(() => {
     Promise.all([getSettings(), getTrustBadges()]).then(([sets, bdgs]) => {
@@ -349,33 +374,126 @@ export default function SettingsPage() {
                         <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                           Desktop Image URL (1920x1080 recommended)
                         </label>
-                        <input
-                          type="url"
-                          value={slide.desktopImage}
-                          onChange={e => handleSlideChange(slide.id, 'desktopImage', e.target.value)}
-                          placeholder="https://images.unsplash.com/..."
-                          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
-                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="url"
+                            value={slide.desktopImage}
+                            onChange={e => handleSlideChange(slide.id, 'desktopImage', e.target.value)}
+                            placeholder="https://images.unsplash.com/..."
+                            style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
+                          />
+                          {slide.desktopImage && (
+                            <button
+                              type="button"
+                              onClick={() => setFramingTarget({
+                                slideId: slide.id,
+                                type: 'desktop',
+                                imageUrl: slide.desktopImage,
+                                position: slide.desktopPosition || '50% 50%',
+                                fit: slide.desktopFit || 'cover',
+                                zoom: slide.desktopZoom || 1
+                              })}
+                              style={{
+                                background: 'rgba(214, 178, 105, 0.15)',
+                                border: '1px solid #D6B269',
+                                color: '#D6B269',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              🎯 Frame & Focus
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div>
                         <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                           Mobile Image URL (Optional, 800x1000 recommended)
                         </label>
-                        <input
-                          type="url"
-                          value={slide.mobileImage || ''}
-                          onChange={e => handleSlideChange(slide.id, 'mobileImage', e.target.value)}
-                          placeholder="https://images.unsplash.com/..."
-                          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
-                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="url"
+                            value={slide.mobileImage || ''}
+                            onChange={e => handleSlideChange(slide.id, 'mobileImage', e.target.value)}
+                            placeholder="https://images.unsplash.com/..."
+                            style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
+                          />
+                          {slide.mobileImage && (
+                            <button
+                              type="button"
+                              onClick={() => setFramingTarget({
+                                slideId: slide.id,
+                                type: 'mobile',
+                                imageUrl: slide.mobileImage!,
+                                position: slide.mobilePosition || '50% 50%',
+                                fit: slide.mobileFit || 'cover',
+                                zoom: slide.mobileZoom || 1
+                              })}
+                              style={{
+                                background: 'rgba(214, 178, 105, 0.15)',
+                                border: '1px solid #D6B269',
+                                color: '#D6B269',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              🎯 Frame & Focus
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {slide.desktopImage && (
-                        <div style={{ position: 'relative', width: '100%', height: '110px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                          <img src={slide.desktopImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <div style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', color: '#D6B269', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px' }}>
-                            Banner Preview
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ position: 'relative', width: '100%', height: '120px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', background: '#0b0f17' }}>
+                            {slide.desktopFit === 'contain' && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  backgroundImage: `url(${slide.desktopImage})`,
+                                  backgroundPosition: slide.desktopPosition || 'center',
+                                  backgroundSize: 'cover',
+                                  filter: 'blur(16px) brightness(0.35)',
+                                  transform: 'scale(1.2)'
+                                }}
+                              />
+                            )}
+                            <img
+                              src={slide.desktopImage}
+                              alt="Preview"
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: slide.desktopFit || 'cover',
+                                objectPosition: slide.desktopPosition || 'center',
+                                transform: slide.desktopZoom && slide.desktopZoom !== 1 ? `scale(${slide.desktopZoom})` : undefined
+                              }}
+                            />
+                            <div style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', color: '#D6B269', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px' }}>
+                              Banner Preview ({slide.desktopFit || 'cover'})
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            <span>Focus Position: <strong style={{ color: '#D6B269' }}>{slide.desktopPosition || '50% 50%'}</strong></span>
+                            <span>Zoom: <strong style={{ color: '#D6B269' }}>{slide.desktopZoom ? `${Math.round(slide.desktopZoom * 100)}%` : '100%'}</strong></span>
                           </div>
                         </div>
                       )}
@@ -761,6 +879,20 @@ export default function SettingsPage() {
           to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
+      {/* Interactive Image Framing & Focal Point Modal */}
+      {framingTarget && (
+        <ImageFrameManager
+          isOpen={true}
+          onClose={() => setFramingTarget(null)}
+          imageUrl={framingTarget.imageUrl}
+          title={`${framingTarget.type === 'desktop' ? 'Desktop' : 'Mobile'} Banner Framing & Focus`}
+          initialPosition={framingTarget.position}
+          initialFit={framingTarget.fit}
+          initialZoom={framingTarget.zoom}
+          aspectHint={framingTarget.type === 'desktop' ? 'banner' : 'card'}
+          onSave={handleSaveFraming}
+        />
+      )}
     </div>
   );
 }

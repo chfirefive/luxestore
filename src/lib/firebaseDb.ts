@@ -33,6 +33,9 @@ export type Product = {
   price: number;
   categorySlug: string;
   imageUrl?: string;
+  imagePosition?: string; // CSS object-position (e.g., 'center center', '50% 30%')
+  imageFit?: 'cover' | 'contain'; // 'cover' or 'contain'
+  imageZoom?: number; // 0.7 to 2.0
   images?: string[];
   media?: { type: 'image' | 'video'; url: string }[];
   description: string;
@@ -50,7 +53,13 @@ export type HeroSlide = {
   title: string;
   subtitle: string;
   desktopImage: string;
+  desktopPosition?: string; // CSS object-position (e.g., '50% 50%')
+  desktopFit?: 'cover' | 'contain';
+  desktopZoom?: number; // 0.7 to 2.0
   mobileImage?: string;
+  mobilePosition?: string;
+  mobileFit?: 'cover' | 'contain';
+  mobileZoom?: number;
   buttonText: string;
   buttonLink: string;
   active: boolean;

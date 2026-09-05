@@ -7,6 +7,7 @@ import {
   listenToCategories, Category,
   listenToProducts, addProduct, updateProduct, deleteProduct, Product
 } from '@/lib/firebaseDb';
+import ImageFrameManager, { FramingConfig } from '@/components/ImageFrameManager';
 import styles from '../Orders.module.css';
 
 export default function ProductsPage() {
@@ -18,6 +19,10 @@ export default function ProductsPage() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imagePosition, setImagePosition] = useState('50% 50%');
+  const [imageFit, setImageFit] = useState<'cover' | 'contain'>('cover');
+  const [imageZoom, setImageZoom] = useState(1);
+  const [isFramingOpen, setIsFramingOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [stock, setStock] = useState('10');
   const [backgroundGradient, setBackgroundGradient] = useState('');
@@ -77,6 +82,9 @@ export default function ProductsPage() {
       price: parseFloat(price),
       categorySlug: category,
       imageUrl: imageUrl.trim() || "",
+      imagePosition,
+      imageFit,
+      imageZoom,
       media: mediaList,
       description: description.trim() || 'No description provided.',
       stock: parseInt(stock) || 0,
@@ -89,7 +97,7 @@ export default function ProductsPage() {
     });
 
     setProducts(prev => [newProd, ...prev]);
-    setName(''); setPrice(''); setImageUrl(''); setMediaList([]); setDescription(''); setStock('10'); setBackgroundGradient(''); setBoxImageUrl(''); setSizesStr(''); setColorsStr(''); setIsHot(false);
+    setName(''); setPrice(''); setImageUrl(''); setImagePosition('50% 50%'); setImageFit('cover'); setImageZoom(1); setMediaList([]); setDescription(''); setStock('10'); setBackgroundGradient(''); setBoxImageUrl(''); setSizesStr(''); setColorsStr(''); setIsHot(false);
     setSuccess(`Successfully added "${name}"!`);
     setTimeout(() => setSuccess(''), 3000);
     setSaving(false);
@@ -162,9 +170,59 @@ export default function ProductsPage() {
                 style={{ padding: '7px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }}
               />
               {imageUrl && (
-                <div style={{ marginTop: '0.75rem', position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-                  <img src={imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <button type="button" onClick={() => setImageUrl('')} style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', fontSize: '0.7rem' }}>✕</button>
+                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ position: 'relative', width: '100px', height: '100px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', background: '#0b0f17', boxShadow: 'var(--shadow-sm)' }}>
+                    {imageFit === 'contain' && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundImage: `url(${imageUrl})`,
+                          backgroundPosition: imagePosition || 'center',
+                          backgroundSize: 'cover',
+                          filter: 'blur(12px) brightness(0.4)',
+                          transform: 'scale(1.2)'
+                        }}
+                      />
+                    )}
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: imageFit,
+                        objectPosition: imagePosition,
+                        transform: imageZoom !== 1 ? `scale(${imageZoom})` : undefined
+                      }}
+                    />
+                    <button type="button" onClick={() => setImageUrl('')} style={{ position: 'absolute', top: '3px', right: '3px', background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', fontSize: '0.75rem', zIndex: 2 }}>✕</button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsFramingOpen(true)}
+                    style={{
+                      background: 'rgba(214, 178, 105, 0.15)',
+                      border: '1px solid #D6B269',
+                      color: '#D6B269',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      alignSelf: 'flex-start'
+                    }}
+                  >
+                    🎯 Frame & Focus Adjuster
+                  </button>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Focal: {imagePosition} • {imageFit} • {Math.round(imageZoom * 100)}%
+                  </span>
                 </div>
               )}
             </div>
@@ -354,6 +412,25 @@ export default function ProductsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Interactive Image Framing & Focal Point Modal */}
+      {isFramingOpen && imageUrl && (
+        <ImageFrameManager
+          isOpen={true}
+          onClose={() => setIsFramingOpen(false)}
+          imageUrl={imageUrl}
+          title="Product Photo Framing & Focal Point"
+          initialPosition={imagePosition}
+          initialFit={imageFit}
+          initialZoom={imageZoom}
+          aspectHint="card"
+          onSave={(config: FramingConfig) => {
+            setImagePosition(config.position);
+            setImageFit(config.fit);
+            setImageZoom(config.zoom);
+          }}
+        />
+      )}
     </div>
   );
 }

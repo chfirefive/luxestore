@@ -296,6 +296,22 @@ export default function WatchHeroSlider({ slides = [] }: Props) {
             className={`watch-slide ${idx === current ? 'active' : ''}`}
             aria-hidden={idx !== current}
           >
+            {/* Contain Mode Backdrop (if user selected contain to avoid any gaps) */}
+            {slide.desktopFit === 'contain' && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: `url(${slide.desktopImage})`,
+                  backgroundPosition: slide.desktopPosition || 'center',
+                  backgroundSize: 'cover',
+                  filter: 'blur(24px) brightness(0.35)',
+                  transform: 'scale(1.25)',
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+
             <picture>
               {slide.mobileImage && (
                 <source media="(max-width: 768px)" srcSet={slide.mobileImage} />
@@ -305,6 +321,11 @@ export default function WatchHeroSlider({ slides = [] }: Props) {
                 alt={slide.title}
                 className="watch-slide-image"
                 loading={idx === 0 ? "eager" : "lazy"}
+                style={{
+                  objectPosition: slide.desktopPosition || 'center',
+                  objectFit: slide.desktopFit || 'cover',
+                  transform: slide.desktopZoom && slide.desktopZoom !== 1 ? `scale(${slide.desktopZoom})` : undefined
+                }}
               />
             </picture>
 

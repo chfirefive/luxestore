@@ -113,11 +113,34 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
             }}
           >
             {activeImage ? (
-              <img
-                src={activeImage}
-                alt={product.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <>
+                {product.imageFit === 'contain' && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      backgroundImage: `url(${activeImage})`,
+                      backgroundPosition: product.imagePosition || 'center',
+                      backgroundSize: 'cover',
+                      filter: 'blur(16px) brightness(0.4)',
+                      transform: 'scale(1.2)'
+                    }}
+                  />
+                )}
+                <img
+                  src={activeImage}
+                  alt={product.name}
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: product.imageFit || 'cover',
+                    objectPosition: product.imagePosition || 'center',
+                    transform: product.imageZoom && product.imageZoom !== 1 ? `scale(${product.imageZoom})` : undefined,
+                    zIndex: 1
+                  }}
+                />
+              </>
             ) : (
               <span style={{ fontSize: '3rem', opacity: 0.5 }}>🛍️</span>
             )}

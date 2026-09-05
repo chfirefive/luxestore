@@ -59,13 +59,34 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <Link href={`/shop/product/${id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className={styles.imageWrapper} style={{ position: 'relative' }}>
           {image ? (
-            <Image
-              src={image}
-              alt={name}
-              fill
-              className={styles.productImage}
-              style={{ objectFit: 'cover' }}
-            />
+            <>
+              {product?.imageFit === 'contain' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundImage: `url(${image})`,
+                    backgroundPosition: product?.imagePosition || 'center',
+                    backgroundSize: 'cover',
+                    filter: 'blur(16px) brightness(0.4)',
+                    transform: 'scale(1.2)',
+                    zIndex: 0
+                  }}
+                />
+              )}
+              <Image
+                src={image}
+                alt={name}
+                fill
+                className={styles.productImage}
+                style={{
+                  objectFit: product?.imageFit || 'cover',
+                  objectPosition: product?.imagePosition || 'center',
+                  transform: product?.imageZoom && product?.imageZoom !== 1 ? `scale(${product.imageZoom})` : undefined,
+                  zIndex: 1
+                }}
+              />
+            </>
           ) : (
             <div className={styles.imagePlaceholder}>
               <p>{description || 'Authentic watch timepieces'}</p>

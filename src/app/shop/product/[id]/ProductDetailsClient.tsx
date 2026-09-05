@@ -145,6 +145,11 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                     src={activeMedia.url} 
                     alt={product.name} 
                     className={styles.productImage}
+                    style={{
+                      objectPosition: product.imagePosition || 'center',
+                      objectFit: product.imageFit || 'contain',
+                      transform: product.imageZoom && product.imageZoom !== 1 ? `scale(${product.imageZoom})` : undefined
+                    }}
                   />
                 )
               ) : (

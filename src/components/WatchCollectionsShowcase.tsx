@@ -249,6 +249,10 @@ export default function WatchCollectionsShowcase({ categories, products, onSelec
                     alt={cat.name}
                     className="watch-collection-img"
                     loading="lazy"
+                    style={{
+                      objectPosition: productWithImg?.imagePosition || 'center',
+                      objectFit: productWithImg?.imageFit || 'cover'
+                    }}
                   />
                 </div>
                 <span className="watch-collection-name">{cat.name}</span>
