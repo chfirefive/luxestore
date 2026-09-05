@@ -17,14 +17,11 @@ interface ProductDetailsClientProps {
 export default function ProductDetailsClient({ product }: ProductDetailsClientProps) {
   const router = useRouter();
   
-  const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : ['9', '9.5', '10', '10.5'];
-  const colors = product.colors && product.colors.length > 0 ? product.colors : [
-    { name: 'Default', hex: product.backgroundGradient?.includes('linear') ? product.backgroundGradient.split(',')[1].trim() : (product.backgroundGradient || '#10b981') },
-    { name: 'Dark Slate', hex: '#1e293b' },
-  ];
+  const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : [];
+  const colors = product.colors && product.colors.length > 0 ? product.colors : [];
   
-  const [selectedSize, setSelectedSize] = useState(sizes[0]);
-  const [selectedColor, setSelectedColor] = useState(colors[0]);
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(sizes[0]);
+  const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | undefined>(colors[0]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showDescModal, setShowDescModal] = useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -49,7 +46,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
 
   const handleDragEnd = (event: any, info: any) => {
     if (info.offset.x >= maxSwipe - 20 && !isOutOfStock) {
-      addToCart(product, selectedSize, selectedColor.hex);
+      addToCart(product, selectedSize, selectedColor?.hex);
       swipeControls.start({ x: maxSwipe });
       setTimeout(() => {
         router.push('/cart');
@@ -188,11 +185,11 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                   }}
                   className={styles.fallback3DContainer}
                 >
-                  <div className={styles.ambientGlow} style={{ background: selectedColor.hex || 'var(--primary)' }} />
+                  <div className={styles.ambientGlow} style={{ background: selectedColor?.hex || 'var(--primary)' }} />
                   <svg viewBox="0 0 200 200" className={styles.fallback3DSvg}>
                     <defs>
                       <linearGradient id="shoe3DGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={selectedColor.hex || '#6366f1'} stopOpacity="0.95" />
+                        <stop offset="0%" stopColor={selectedColor?.hex || '#6366f1'} stopOpacity="0.95" />
                         <stop offset="50%" stopColor="#ec4899" stopOpacity="0.8" />
                         <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.9" />
                       </linearGradient>
@@ -258,19 +255,23 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
               </button>
             </div>
 
-            {/* Size Stack */}
-            <span className={styles.overlayLabel} style={{ marginTop: '0.75rem' }}>Size</span>
-            <div className={styles.verticalStack}>
-              {sizes.map(size => (
-                <button 
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`neumorphic-btn ${styles.sizePill} ${selectedSize === size ? styles.activePill : ''}`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
+            {/* Size Stack — only shown when sizes exist */}
+            {sizes.length > 0 && (
+              <>
+                <span className={styles.overlayLabel} style={{ marginTop: '0.75rem' }}>Size</span>
+                <div className={styles.verticalStack}>
+                  {sizes.map(size => (
+                    <button 
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`neumorphic-btn ${styles.sizePill} ${selectedSize === size ? styles.activePill : ''}`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Right Vertical Column: Fav + Color Stack */}
@@ -288,22 +289,24 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
               </button>
             </div>
 
-            {/* Color Swatches */}
-            <div className={styles.colorSection}>
-              <span className={styles.overlayLabel}>Color</span>
-              <div className={styles.verticalStack}>
-                {colors.map(color => (
-                  <button 
-                    key={color.name + color.hex}
-                    onClick={() => setSelectedColor(color)}
-                    className={`neumorphic-btn ${styles.colorPill} ${selectedColor.name === color.name ? styles.activeColorPill : ''}`}
-                    title={color.name}
-                  >
-                    <div className={styles.colorDot} style={{ background: color.hex }} />
-                  </button>
-                ))}
+            {/* Color Swatches — only shown when colors exist */}
+            {colors.length > 0 && (
+              <div className={styles.colorSection}>
+                <span className={styles.overlayLabel}>Color</span>
+                <div className={styles.verticalStack}>
+                  {colors.map(color => (
+                    <button 
+                      key={color.name + color.hex}
+                      onClick={() => setSelectedColor(color)}
+                      className={`neumorphic-btn ${styles.colorPill} ${selectedColor?.name === color.name ? styles.activeColorPill : ''}`}
+                      title={color.name}
+                    >
+                      <div className={styles.colorDot} style={{ background: color.hex }} />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
 

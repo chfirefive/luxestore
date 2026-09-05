@@ -48,7 +48,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setBackgroundGradient(prod.backgroundGradient || '');
         setBoxImageUrl(prod.boxImageUrl || '');
         setSizesStr(prod.sizes ? prod.sizes.join(', ') : '');
-        setColorsStr(prod.colors ? prod.colors.map(c => `${c.name} ${c.hex}`).join(', ') : '');
+        setColorsStr(prod.colors ? prod.colors.map(c => (c.hex && c.hex.toLowerCase() !== c.name.toLowerCase() ? `${c.name} ${c.hex}` : c.name)).join(', ') : '');
         setMediaList(prod.media || []);
         setArchived(!!prod.archived);
         setIsHot(!!prod.isHot);
@@ -68,11 +68,24 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setSaving(true);
     const sizes = sizesStr.split(',').map(s => s.trim()).filter(Boolean);
     const colors = colorsStr.split(',').map(c => {
-      const parts = c.trim().split(' ');
+      const trimmed = c.trim();
+      if (!trimmed) return null;
+      const parts = trimmed.split(/\s+/);
       if (parts.length >= 2) {
-        const hex = parts.pop()!;
+        const last = parts[parts.length - 1];
+        if (last.startsWith('#') || /^[0-9a-fA-F]{3,8}$/.test(last)) {
+          const hex = last.startsWith('#') ? last : `#${last}`;
+          const name = parts.slice(0, -1).join(' ');
+          return { name, hex };
+        }
         const name = parts.join(' ');
-        return { name, hex };
+        return { name, hex: name.toLowerCase() };
+      } else if (parts.length === 1) {
+        const val = parts[0];
+        if (val.startsWith('#')) {
+          return { name: val, hex: val };
+        }
+        return { name: val, hex: val.toLowerCase() };
       }
       return null;
     }).filter(Boolean) as {name: string, hex: string}[];
@@ -292,8 +305,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label htmlFor="product-colors" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Colors (Format: Name #Hex, Name #Hex)</label>
-              <input id="product-colors" name="product-colors" type="text" value={colorsStr} onChange={e => setColorsStr(e.target.value)} placeholder="e.g. Red #ef4444, Blue #3b82f6" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
+              <label htmlFor="product-colors" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Colors (Comma separated, e.g. Black, Red #ef4444)</label>
+              <input id="product-colors" name="product-colors" type="text" value={colorsStr} onChange={e => setColorsStr(e.target.value)} placeholder="e.g. Black, Red #ef4444, Blue #3b82f6" style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontFamily: 'inherit' }} />
             </div>
           </div>
 
