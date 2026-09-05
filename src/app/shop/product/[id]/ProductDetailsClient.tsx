@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, useAnimation, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, ArrowLeft, Heart, ChevronRight, Info, Play } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, Heart, ChevronRight, Info, Play, ZoomIn } from 'lucide-react';
 import { addToCart, Product } from '@/lib/firebaseDb';
 import { Icons } from '@/components/Icons';
 import styles from './ProductDetails.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
+import ImageZoomModal from '@/components/ImageZoomModal';
 
 interface ProductDetailsClientProps {
   product: Product;
@@ -27,6 +28,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
   const [isFavorite, setIsFavorite] = useState(false);
   const [showDescModal, setShowDescModal] = useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
   const { formatPrice, currency } = useCurrency();
   
   const isOutOfStock = product.stock !== undefined && product.stock <= 0;
@@ -118,7 +120,29 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
           <div className={styles.bigBgText}>{brandName}</div>
           
           {/* Center Product Media Gallery or 3D Animated Fallback */}
-          <div className={styles.mediaFrame}>
+          <div
+            className={styles.mediaFrame}
+            title="Double-click to zoom"
+            style={{ cursor: 'zoom-in', position: 'relative' }}
+          >
+            {/* Zoom hint badge */}
+            <div style={{
+              position: 'absolute',
+              bottom: '8px',
+              right: '8px',
+              zIndex: 10,
+              background: 'rgba(0,0,0,0.45)',
+              borderRadius: '8px',
+              padding: '4px 7px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              pointerEvents: 'none',
+              opacity: 0.75,
+            }}>
+              <ZoomIn size={12} color="white" />
+              <span style={{ color: 'white', fontSize: '0.65rem', fontWeight: 600, letterSpacing: '0.03em' }}>2×</span>
+            </div>
             <AnimatePresence mode="wait">
               {activeMedia ? (
                 activeMedia.type === 'video' ? (
@@ -148,8 +172,10 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                     style={{
                       objectPosition: product.imagePosition || 'center',
                       objectFit: product.imageFit || 'contain',
-                      transform: product.imageZoom && product.imageZoom !== 1 ? `scale(${product.imageZoom})` : undefined
+                      transform: product.imageZoom && product.imageZoom !== 1 ? `scale(${product.imageZoom})` : undefined,
+                      cursor: 'zoom-in',
                     }}
+                    onDoubleClick={() => setZoomSrc(activeMedia.url)}
                   />
                 )
               ) : (
@@ -370,6 +396,15 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
             </button>
           </motion.div>
         </div>
+      )}
+
+      {/* Image Zoom Modal — opens on double-click */}
+      {zoomSrc && (
+        <ImageZoomModal
+          src={zoomSrc}
+          alt={product.name}
+          onClose={() => setZoomSrc(null)}
+        />
       )}
 
     </div>

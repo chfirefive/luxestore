@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Product, addToCart } from '@/lib/firebaseDb';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Icons } from '@/components/Icons';
+import ImageZoomModal from '@/components/ImageZoomModal';
+import { ZoomIn } from 'lucide-react';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -15,6 +17,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
   const { formatPrice } = useCurrency();
 
   if (!product) return null;
@@ -34,6 +37,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
   };
 
   return (
+    <>
     <div
       style={{
         position: 'fixed',
@@ -109,8 +113,11 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
               background: 'var(--surface-hover)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              cursor: 'zoom-in',
             }}
+            onDoubleClick={() => activeImage && setZoomSrc(activeImage)}
+            title="Double-click to zoom"
           >
             {activeImage ? (
               <>
@@ -137,9 +144,28 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                     objectFit: product.imageFit || 'cover',
                     objectPosition: product.imagePosition || 'center',
                     transform: product.imageZoom && product.imageZoom !== 1 ? `scale(${product.imageZoom})` : undefined,
-                    zIndex: 1
+                    zIndex: 1,
+                    cursor: 'zoom-in',
                   }}
                 />
+                {/* Zoom hint badge */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  right: '10px',
+                  zIndex: 5,
+                  background: 'rgba(0,0,0,0.5)',
+                  borderRadius: '8px',
+                  padding: '4px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  pointerEvents: 'none',
+                  opacity: 0.8,
+                }}>
+                  <ZoomIn size={12} color="white" />
+                  <span style={{ color: 'white', fontSize: '0.65rem', fontWeight: 600 }}>2×</span>
+                </div>
               </>
             ) : (
               <span style={{ fontSize: '3rem', opacity: 0.5 }}>🛍️</span>
@@ -309,5 +335,15 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
         </div>
       </div>
     </div>
+
+      {/* Image Zoom Modal — opens on double-click */}
+      {zoomSrc && (
+        <ImageZoomModal
+          src={zoomSrc}
+          alt={product.name}
+          onClose={() => setZoomSrc(null)}
+        />
+      )}
+    </>
   );
 }
