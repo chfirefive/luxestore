@@ -79,7 +79,7 @@ export default function CartPage() {
     setFormError('');
     setStep('placing');
     try {
-      await placeOrder({
+      const placedOrder = await placeOrder({
         client: form.name,
         email: form.email,
         phone: form.phone,
@@ -88,6 +88,28 @@ export default function CartPage() {
         items: cart,
         total,
       });
+
+      // Dispatch Order Confirmation Email
+      try {
+        await fetch('/api/orders/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: placedOrder.id,
+            clientName: placedOrder.client,
+            to: placedOrder.email,
+            phone: placedOrder.phone,
+            address: placedOrder.address,
+            items: placedOrder.items,
+            total: placedOrder.total,
+            notes: placedOrder.notes,
+            date: placedOrder.date,
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Order placed, but failed dispatching confirmation email:', emailErr);
+      }
+
       clearCart();
       router.push('/shop/order-success');
     } catch (err) {

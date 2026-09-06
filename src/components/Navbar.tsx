@@ -10,6 +10,7 @@ import styles from './Navbar.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ALL_CURRENCIES } from '@/lib/currency';
 import AnnouncementBar from './AnnouncementBar';
+import HoldableProfileAvatar from './HoldableProfileAvatar';
 
 export default function Navbar() {
   const router = useRouter();
@@ -266,31 +267,11 @@ export default function Navbar() {
 
             {mounted && currentEmail ? (
               <>
-                <Link href="/shop/profile" title={`Profile: ${displayName}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--primary), #8b5cf6)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: 800,
-                    fontSize: '0.9rem',
-                    fontFamily: 'inherit',
-                    boxShadow: '0 2px 10px rgba(99,102,241,0.5)',
-                    border: '2px solid rgba(255,255,255,0.15)',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(99,102,241,0.7)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 10px rgba(99,102,241,0.5)'; }}
-                  >
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                </Link>
+                <HoldableProfileAvatar
+                  initial={displayName ? displayName.charAt(0) : 'U'}
+                  size={36}
+                  displayName={displayName}
+                />
                 <button onClick={handleLogout} className={styles.loginBtn} title="Sign Out" style={{ padding: '6px 10px' }}>
                   <Icons.Logout />
                 </button>
@@ -354,11 +335,41 @@ export default function Navbar() {
         </div>
 
         <nav className={styles.drawerLinks}>
+          {mounted && currentEmail && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'var(--surface-hover)', borderRadius: '12px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <HoldableProfileAvatar
+                  initial={displayName ? displayName.charAt(0) : 'U'}
+                  size={36}
+                  displayName={displayName}
+                />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>{displayName}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Hold avatar for Portal</div>
+                </div>
+              </div>
+              <button onClick={handleLogout} className={styles.loginBtn} title="Sign Out" style={{ padding: '6px' }}>
+                <Icons.Logout />
+              </button>
+            </div>
+          )}
+
           {navLinks.map(link => (
             <Link key={link.href} href={link.href} className={styles.drawerLink} onClick={() => setMenuOpen(false)}>
               {link.label}
             </Link>
           ))}
+
+          {mounted && currentEmail && (
+            <Link
+              href="/portal"
+              className={styles.drawerLink}
+              onClick={() => setMenuOpen(false)}
+              style={{ color: '#818cf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid var(--border)', marginTop: '8px', paddingTop: '12px' }}
+            >
+              <Icons.Shield style={{ width: '16px', height: '16px' }} /> Owner &amp; Client Portal
+            </Link>
+          )}
         </nav>
       </div>
     </>

@@ -14,6 +14,7 @@ export default function UserOrdersPage() {
 
   // Cancel / Complaint Modal States
   const [cancelModalOrder, setCancelModalOrder] = useState<ExternalOrder | null>(null);
+  const [cancelStoreOrder, setCancelStoreOrder] = useState<Order | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [complaintModalOrder, setComplaintModalOrder] = useState<ExternalOrder | null>(null);
   const [complaintDetails, setComplaintDetails] = useState('');
@@ -63,6 +64,36 @@ export default function UserOrdersPage() {
       if (data.success) {
         setActionNotice(`✅ Order #${cancelModalOrder.id.slice(-6).toUpperCase()} cancelled & automatically forwarded to ${cancelModalOrder.externalStoreName}.`);
         setCancelModalOrder(null);
+        setCancelReason('');
+        await fetchUserOrders();
+      } else {
+        alert(data.error || 'Failed to cancel order.');
+      }
+    } catch {
+      alert('Network error while cancelling order.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelStoreSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cancelStoreOrder) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: cancelStoreOrder.id,
+          orderData: cancelStoreOrder,
+          reason: cancelReason.trim() || 'Cancelled by customer'
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionNotice(`✅ Order #${cancelStoreOrder.id.slice(-6).toUpperCase()} has been cancelled. An email notification has been dispatched to ${cancelStoreOrder.email}.`);
+        setCancelStoreOrder(null);
         setCancelReason('');
         await fetchUserOrders();
       } else {
@@ -213,13 +244,36 @@ export default function UserOrdersPage() {
                     ))}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '1.25rem', flexWrap: 'wrap', gap: '10px' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
                       Shipping to: <strong>{order.address}</strong>
                     </p>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginRight: '10px' }}>Total Amount:</span>
-                      <strong style={{ fontSize: '1.3rem', color: 'var(--primary)' }}>PKR {order.total.toLocaleString()}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      {order.status === 'Pending' && (
+                        <button
+                          type="button"
+                          onClick={() => { setCancelStoreOrder(order); setCancelReason(''); }}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#ef4444',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          🚫 Cancel Order
+                        </button>
+                      )}
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginRight: '10px' }}>Total Amount:</span>
+                        <strong style={{ fontSize: '1.3rem', color: 'var(--primary)' }}>PKR {order.total.toLocaleString()}</strong>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -419,6 +473,47 @@ export default function UserOrdersPage() {
                   style={{ padding: '8px 18px', borderRadius: '8px', background: '#f59e0b', border: 'none', color: 'black', fontWeight: 700, cursor: 'pointer' }}
                 >
                   {actionLoading ? 'Dispatching…' : '✓ Dispatch to Store'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* ── Cancel Store Order Modal ── */}
+      {cancelStoreOrder && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', maxWidth: '460px', width: '100%', boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 8px', color: '#ef4444' }}>
+              Cancel Order #{cancelStoreOrder.id.slice(-6).toUpperCase()}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 16px' }}>
+              Are you sure you want to cancel this order? An automatic cancellation confirmation email will be sent to <strong>{cancelStoreOrder.email}</strong>.
+            </p>
+            <form onSubmit={handleCancelStoreSubmit}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                Reason for cancellation (optional)
+              </label>
+              <textarea
+                rows={3}
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                placeholder="e.g. Changed mind, ordered incorrect size/model..."
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setCancelStoreOrder(null); setCancelReason(''); }}
+                  style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--surface-hover)', border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  style={{ padding: '8px 18px', borderRadius: '8px', background: '#ef4444', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  {actionLoading ? 'Cancelling…' : '✓ Confirm Cancel'}
                 </button>
               </div>
             </form>

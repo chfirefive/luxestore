@@ -9,6 +9,7 @@ import { Icons } from '@/components/Icons';
 import styles from './profile.module.css';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ALL_CURRENCIES } from '@/lib/currency';
+import HoldableProfileAvatar from '@/components/HoldableProfileAvatar';
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function UserProfilePage() {
 
   // Cancel / Complaint Modal States for profile
   const [cancelModalOrder, setCancelModalOrder] = useState<ExternalOrder | null>(null);
+  const [cancelStoreOrder, setCancelStoreOrder] = useState<Order | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [complaintModalOrder, setComplaintModalOrder] = useState<ExternalOrder | null>(null);
   const [complaintDetails, setComplaintDetails] = useState('');
@@ -131,6 +133,35 @@ export default function UserProfilePage() {
     }
   };
 
+  const handleCancelStoreSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cancelStoreOrder) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: cancelStoreOrder.id,
+          orderData: cancelStoreOrder,
+          reason: cancelReason.trim() || 'Cancelled by customer'
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionNotice(`✅ Order #${cancelStoreOrder.id.slice(0, 8)} cancelled. Confirmation email has been sent to ${cancelStoreOrder.email}.`);
+        setCancelStoreOrder(null);
+        setCancelReason('');
+      } else {
+        alert(data.error || 'Failed to cancel order.');
+      }
+    } catch {
+      alert('Network error while cancelling order.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleComplaintSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!complaintModalOrder || !complaintDetails.trim()) return;
@@ -185,7 +216,7 @@ export default function UserProfilePage() {
             {/* Header Banner */}
             <div className={styles.headerBanner}>
               <div className={styles.userInfoGroup}>
-                <div className={styles.avatarCircle}>{initialLetter}</div>
+                <HoldableProfileAvatar initial={initialLetter} size={68} displayName={displayName} />
                 <div>
                   <h1 className={styles.userName}>{displayName || email?.split('@')[0]}</h1>
                   <p className={styles.userEmail}>
@@ -319,12 +350,32 @@ export default function UserProfilePage() {
                                 ))}
                               </div>
 
-                              <div className={styles.orderFooter}>
+                              <div className={styles.orderFooter} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                   Shipping to: <strong>{order.address}</strong>
                                 </div>
-                                <div className={styles.orderTotal}>
-                                  Total: {formatPrice(order.total)}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  {order.status === 'Pending' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => { setCancelStoreOrder(order); setCancelReason(''); }}
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        color: '#ef4444',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        padding: '4px 12px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      🚫 Cancel Order
+                                    </button>
+                                  )}
+                                  <div className={styles.orderTotal}>
+                                    Total: {formatPrice(order.total)}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -657,6 +708,47 @@ export default function UserProfilePage() {
                   style={{ padding: '8px 18px', borderRadius: '8px', background: '#f59e0b', border: 'none', color: 'black', fontWeight: 700, cursor: 'pointer' }}
                 >
                   {actionLoading ? 'Dispatching…' : '✓ Dispatch to Store'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* ── Cancel Store Order Modal ── */}
+      {cancelStoreOrder && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', maxWidth: '460px', width: '100%', boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 8px', color: '#ef4444' }}>
+              Cancel Order #{cancelStoreOrder.id.slice(0, 8)}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 16px' }}>
+              Are you sure you want to cancel this order? A cancellation confirmation email will be automatically sent to <strong>{cancelStoreOrder.email}</strong>.
+            </p>
+            <form onSubmit={handleCancelStoreSubmit}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                Reason for cancellation (optional)
+              </label>
+              <textarea
+                rows={3}
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                placeholder="e.g. Changed mind, ordered incorrect product/size..."
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--text-main)', fontSize: '0.9rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setCancelStoreOrder(null); setCancelReason(''); }}
+                  style={{ padding: '8px 16px', borderRadius: '8px', background: 'var(--surface-hover)', border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  style={{ padding: '8px 18px', borderRadius: '8px', background: '#ef4444', border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  {actionLoading ? 'Cancelling…' : '✓ Confirm Cancel'}
                 </button>
               </div>
             </form>

@@ -58,6 +58,7 @@ export default function OwnerOrders() {
   const handleMarkReady = async (orderId: string) => {
     if (busyId) return;
     setBusyId(orderId + '_ready');
+    const orderObj = orders.find(o => o.id === orderId);
     const smtpUser = sessionStorage.getItem('owner_email') || undefined;
     const smtpPass = sessionStorage.getItem('owner_smtp_pass') || undefined;
 
@@ -65,7 +66,7 @@ export default function OwnerOrders() {
       const res = await fetch('/api/orders/ready', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: orderId, smtpUser, smtpPass })
+        body: JSON.stringify({ id: orderId, orderData: orderObj, smtpUser, smtpPass })
       });
       const data = await res.json();
       if (!data.success) {
@@ -88,6 +89,7 @@ export default function OwnerOrders() {
     setConfirmId(null);
     if (busyId) return;
     setBusyId(orderId + '_cancel');
+    const orderObj = orders.find(o => o.id === orderId);
     const smtpUser = sessionStorage.getItem('owner_email') || undefined;
     const smtpPass = sessionStorage.getItem('owner_smtp_pass') || undefined;
 
@@ -95,7 +97,7 @@ export default function OwnerOrders() {
       const res = await fetch('/api/orders/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: orderId, smtpUser, smtpPass })
+        body: JSON.stringify({ id: orderId, orderData: orderObj, reason: 'Cancelled by store owner', smtpUser, smtpPass })
       });
       const data = await res.json();
       if (!data.success) {

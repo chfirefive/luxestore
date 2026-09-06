@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+function cleanEnv(val?: string): string {
+  return (val || '').replace(/^["']|["']$/g, '').trim();
+}
+
 export async function POST(request: Request) {
   try {
     const { to, subject, html } = await request.json();
@@ -9,11 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing to, subject, or html body parameters.' }, { status: 400 });
     }
 
-    const host = process.env.SMTP_HOST;
-    const port = parseInt(process.env.SMTP_PORT || '587');
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.SMTP_FROM || user || 'no-reply@luxestore.com';
+    const host = cleanEnv(process.env.SMTP_HOST);
+    const port = parseInt(cleanEnv(process.env.SMTP_PORT) || '587');
+    const user = cleanEnv(process.env.SMTP_USER);
+    const pass = cleanEnv(process.env.SMTP_PASS);
+    const from = cleanEnv(process.env.SMTP_FROM) || user || 'no-reply@luxestore.com';
 
     // If SMTP credentials aren't set, use Ethereal to send a test email!
     if (!host || !user || !pass) {
@@ -68,6 +72,9 @@ export async function POST(request: Request) {
       auth: {
         user,
         pass
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
 
